@@ -1,10 +1,9 @@
-# app.py - Flask app for dictionary-based annotation
-
 import json
 import os
 import re
 import html
-from flask import Flask, render_template, jsonify # Added jsonify for potential future API use
+# Make sure 'request' is imported
+from flask import Flask, render_template, jsonify, request
 
 app = Flask(__name__)
 
@@ -19,7 +18,7 @@ trait_list = []
 def load_data():
     """Loads QTL data and trait dictionary from files."""
     global qtl_data, trait_list
-
+    # ... (Keep the existing load_data function as it is) ...
     # Load QTL_text.json
     try:
         if not os.path.exists(QTL_JSON_PATH):
@@ -59,33 +58,20 @@ def load_data():
         print(f"An unexpected error occurred loading {TRAIT_DICT_PATH}: {e}")
         trait_list = []
 
+# Load data when the application starts
+load_data()
 
+
+# --- Trait Finding Logic ---
 def find_traits(text: str, trait_list: list[str]) -> list[dict]:
-    """
-    Finds occurrences of traits in the text using dictionary matching.
-    Handles overlaps by preferring the longest match starting at the same position.
-
-    Args:
-        text: The text string (title or abstract) to search within.
-        trait_list: A list of trait terms to search for.
-
-    Returns:
-        A list of dictionaries, where each dictionary represents a found trait
-        and has keys: 'start', 'end', 'label', 'term'.
-        Returns an empty list if no matches are found.
-    """
+    """Finds occurrences of traits in the text using dictionary matching."""
+    # ... (Keep the existing find_traits function as it is) ...
     if not text or not trait_list:
         return []
 
     all_matches = []
-    # Use a set for faster lookup if trait_list is very large, but list is fine for now
-    # trait_set = set(trait_list)
-
     for trait in trait_list:
-        # Escape special regex characters in the trait and add word boundaries
-        # Use re.IGNORECASE for case-insensitive matching
         try:
-            # Ensure the trait is not empty before creating pattern
             if not trait:
                 continue
             pattern = r'\b' + re.escape(trait) + r'\b'
@@ -93,170 +79,107 @@ def find_traits(text: str, trait_list: list[str]) -> list[dict]:
                 all_matches.append({
                     'start': match.start(),
                     'end': match.end(),
-                    'label': 'Trait', # Hardcoded label for now
-                    'term': match.group(0) # Store the actual matched text (maintains case)
-                                           # Alternatively, use 'term': trait if original case isn't needed
+                    'label': 'Trait',
+                    'term': match.group(0)
                 })
         except re.error as e:
-            # Handle potential regex errors if a trait is malformed, though re.escape should prevent most
             print(f"Regex error for trait '{trait}': {e}")
             continue
 
-
-    # --- Overlap Filtering (Prefer Longest Match) ---
     if not all_matches:
         return []
 
-    # Sort primarily by start index (ascending), secondarily by end index (descending - longer matches first)
     all_matches.sort(key=lambda x: (x['start'], -x['end']))
 
     filtered_matches = []
     last_match_end = -1
 
     for match in all_matches:
-        # Only add match if it doesn't significantly overlap with the previous accepted match
         if match['start'] >= last_match_end:
             filtered_matches.append(match)
             last_match_end = match['end']
-        # Optional: Handle cases where a slightly overlapping but much longer match might be preferred
-        # (This basic filtering is usually sufficient for dictionary matching)
 
     return filtered_matches
 
-# Load data when the application starts
-load_data()
+
+# --- Visualization HTML Generation ---
+def generate_visualization_html(text: str, matches: list[dict]) -> str:
+    """Generates an HTML string with matched traits highlighted using spans."""
+    # ... (Keep the existing generate_visualization_html function as it is) ...
+    if not matches or not text:
+        return html.escape(text)
+
+    matches.sort(key=lambda x: x['start'])
+    result_parts = []
+    last_end = 0
+
+    for match in matches:
+        start, end = match['start'], match['end']
+        label = match['label']
+        term_text = match.get('term', text[start:end])
+
+        if start > last_end:
+            result_parts.append(html.escape(text[last_end:start]))
+
+        result_parts.append(
+            f'<span class="entity label-{label.upper()}">'
+            f'<span class="entity-text">{html.escape(term_text)}</span>'
+            f'<span class="entity-label">{html.escape(label)}</span>'
+            f'</span>'
+        )
+        last_end = end
+
+    if last_end < len(text):
+        result_parts.append(html.escape(text[last_end:]))
+
+    return "".join(result_parts)
+
 
 # --- Flask Routes ---
 @app.route('/')
 def index():
     """Renders the main HTML page."""
-    # Pass the number of loaded records/traits just for info display if needed
     num_papers = len(qtl_data)
     num_traits = len(trait_list)
     return render_template('index.html', num_papers=num_papers, num_traits=num_traits)
 
-# #--- Temporary Testing Block (REMOVE BEFORE RUNNING THE APP) ---
-# if __name__ == '__main__':
-#     test_text = "Variance component analysis of quantitative trait loci for pork carcass composition and meat quality on SSC4 and SSC11."
-#     print("Test Text:", test_text)
-#     if trait_list: # Make sure traits are loaded
-#         found = find_traits(test_text, trait_list)
-#         print("Found Traits:")
-#         for item in found:
-#             print(f"  - Term: '{item['term']}', Start: {item['start']}, End: {item['end']}, Label: {item['label']}")
-#     else:
-#         print("Trait list is empty, cannot test.")
-#     #--- End Temporary Testing Block ---
+@app.route('/visualize', methods=['POST'])
+def visualize():
+    """Handles the PMID submission, finds traits, and returns visualization data."""
+    if not request.form or 'pmid' not in request.form:
+        return jsonify({'error': 'Missing PMID in request form.'}), 400
 
-    # Main Execution
-    app.run(debug=True) # Keep this line commented out while testing the block above
+    pmid = request.form.get('pmid').strip()
+    if not pmid:
+        return jsonify({'error': 'PMID cannot be empty.'}), 400
 
+    # Lookup paper data
+    paper_info = qtl_data.get(pmid)
 
+    if not paper_info:
+        return jsonify({'error': f"PMID '{pmid}' not found in the loaded data."}), 404
 
+    original_title = paper_info.get('Title', '')
+    original_abstract = paper_info.get('Abstract', '')
 
-# app.py - Streamlit app for dictionary-based annotation
+    # Find traits
+    title_matches = find_traits(original_title, trait_list)
+    abstract_matches = find_traits(original_abstract, trait_list)
 
-# import streamlit as st
-# import json
-# import re
+    # Generate visualization HTML
+    viz_title_html = generate_visualization_html(original_title, title_matches)
+    viz_abstract_html = generate_visualization_html(original_abstract, abstract_matches)
 
-# # -------------------
-# # 1. LOAD THE DATA
-# # -------------------
-# # Load the QTL text data
-# with open("QTL_text.json", "r", encoding="utf-8") as f:
-#     qtl_data = json.load(f)
+    # Return data as JSON
+    return jsonify({
+        'title': original_title,
+        'abstract': original_abstract,
+        'viz_title_html': viz_title_html,
+        'viz_abstract_html': viz_abstract_html,
+        'error': None # Explicitly indicate no error
+    })
 
-# # Convert the list of entries into a dict {PMID: record, ...} for easy lookup
-# qtl_records = {entry["PMID"]: entry for entry in qtl_data}
-
-# # Load the trait dictionary
-# with open("Trait dictionary.txt", "r", encoding="utf-8") as f:
-#     traits = [line.strip() for line in f if line.strip()]
-
-# # ---------------------------
-# # 2. DICTIONARY MATCH HELPER
-# # ---------------------------
-# def highlight_terms(text, terms):
-#     """
-#     Finds occurrences of each term in `terms` within `text` (case-insensitive)
-#     and wraps them in <mark>...</mark> for highlighting.
+# --- Main Execution ---
+if __name__ == '__main__':
+    app.run(debug=True)
     
-#     This approach identifies all non-overlapping matches, sorted by start index,
-#     then rebuilds the text with <mark> tags.
-#     """
-#     if not text:
-#         return ""
-
-#     # We'll collect all matches as (start, end, matched_string)
-#     matches = []
-#     for term in terms:
-#         # Use word-boundary regex to match whole words (case-insensitive).
-#         pattern = rf"\b{re.escape(term)}\b"
-#         for match in re.finditer(pattern, text, flags=re.IGNORECASE):
-#             start, end = match.span()
-#             matches.append((start, end, text[start:end]))
-
-#     # If no matches, just return the original text
-#     if not matches:
-#         return text
-
-#     # Sort matches by the start index (ascending)
-#     matches.sort(key=lambda x: x[0])
-
-#     # Build a new string with <mark> around matched spans
-#     highlighted_text = []
-#     last_idx = 0
-
-#     for start, end, matched_str in matches:
-#         # If there's a gap between the last end and this start, add that text
-#         if start >= last_idx:
-#             highlighted_text.append(text[last_idx:start])
-#             # Highlight the match
-#             highlighted_text.append(f"<mark>{text[start:end]}</mark>")
-#             last_idx = end
-#         else:
-#             # Overlapping match or already covered by previous highlight, skip it
-#             continue
-
-#     # Add any remaining text after the last match
-#     highlighted_text.append(text[last_idx:])
-
-#     return "".join(highlighted_text)
-
-
-# # -------------------
-# # 3. STREAMLIT APP
-# # -------------------
-# st.title("Dictionary-Based Annotation Demo")
-
-# st.markdown("""
-# Enter a **PMID** below to retrieve its Title and Abstract from the QTL_text.json file.
-# Then we do a simple dictionary lookup on each word from **Trait dictionary.txt** and highlight the matches.
-# """)
-
-# pmid_input = st.text_input("Enter a PMID (e.g., 17179536)")
-
-# if st.button("Submit"):
-#     if not pmid_input:
-#         st.warning("Please enter a PMID first.")
-#     else:
-#         # Find the record with that PMID
-#         record = qtl_records.get(pmid_input)
-#         if record:
-#             title = record.get("Title", "")
-#             abstract = record.get("Abstract", "")
-
-#             # 1) Highlight Title
-#             highlighted_title = highlight_terms(title, traits)
-#             # 2) Highlight Abstract
-#             highlighted_abstract = highlight_terms(abstract, traits)
-
-#             # Display them with Streamlit, allowing HTML
-#             st.subheader("Title")
-#             st.markdown(highlighted_title, unsafe_allow_html=True)
-
-#             st.subheader("Abstract")
-#             st.markdown(highlighted_abstract, unsafe_allow_html=True)
-#         else:
-#             st.error(f"No record found for PMID: {pmid_input}")
