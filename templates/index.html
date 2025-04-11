@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Annotation Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>PubMed Annotation Visualizer</h1>
+
+    <form id="pmid-form">
+        <label for="pmid">Enter PMID:</label>
+        <input type="text" id="pmid" name="pmid" required>
+        <button type="submit">Visualize</button>
+    </form>
+
+    <div id="loading" style="display: none;">Loading...</div>
+    <div id="error-message" style="color: red;"></div>
+
+    <div id="results">
+        <h2>Title</h2>
+        <div id="paper-title"></div>
+        <div id="viz-title" class="visualization"></div>
+
+        <h2>Abstract</h2>
+        <div id="paper-abstract" style="white-space: pre-wrap;"></div>
+        <div id="viz-abstract" class="visualization"></div>
+    </div>
+
+    <hr>
+    <footer>
+        <p>Loaded {{ num_papers }} papers and {{ num_traits }} traits.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
