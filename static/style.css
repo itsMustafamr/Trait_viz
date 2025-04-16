@@ -2,17 +2,82 @@ body {
     font-family: sans-serif;
     line-height: 1.5;
     margin: 2em;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1em;
 }
 
-#results {
+h1 {
+    text-align: center;
+    margin-bottom: 1.5em;
+    color: #2c3e50;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5em;
+}
+
+.form-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 2em;
+    gap: 1em;
+}
+
+.form-box {
+    flex: 1;
+    padding: 1em;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.form-box h2 {
+    margin-top: 0;
+    font-size: 1.2em;
+    color: #34495e;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 0.5em;
+    margin: 0.5em 0;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 0.6em 1.2em;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #2980b9;
+}
+
+#results, #search-results {
     margin-top: 2em;
     border-top: 1px solid #ccc;
     padding-top: 1em;
     display: none; /* Initially hidden */
 }
 
+#paper-journal, #paper-source {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 0.5em;
+}
+
 #error-message {
     margin-top: 1em;
+    padding: 0.5em;
+    background-color: #ffecec;
+    color: #c0392b;
+    border-left: 4px solid #e74c3c;
     font-weight: bold;
 }
 
@@ -21,6 +86,86 @@ body {
     border: 1px dashed #eee;
     padding: 0.5em;
     line-height: 2.2; /* Increase line height for better label visibility */
+    background-color: #f5f5f5;
+}
+
+#loading {
+    text-align: center;
+    padding: 1em;
+    font-weight: bold;
+    color: #3498db;
+}
+
+.search-results-list {
+    list-style: none;
+    padding: 0;
+}
+
+.search-results-list li {
+    padding: 0.8em;
+    border-bottom: 1px solid #eee;
+}
+
+.search-results-list li:hover {
+    background-color: #f5f5f5;
+}
+
+.pmid-link {
+    color: #3498db;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.pmid-link:hover {
+    text-decoration: underline;
+}
+
+.search-options {
+    margin: 0.5em 0;
+}
+
+.search-summary {
+    margin-bottom: 1em;
+    font-style: italic;
+    color: #666;
+}
+
+.source-badge {
+    display: inline-block;
+    padding: 0.2em 0.5em;
+    border-radius: 3px;
+    font-size: 0.8em;
+    margin-right: 0.5em;
+    font-weight: bold;
+}
+
+.local-badge {
+    background-color: #e3f2fd;
+    color: #0d47a1;
+    border: 1px solid #bbdefb;
+}
+
+.pubmed-badge {
+    background-color: #e8f5e9;
+    color: #1b5e20;
+    border: 1px solid #c8e6c9;
+}
+
+.pubmed-result {
+    border-left: 3px solid #66bb6a;
+}
+
+.local-result {
+    border-left: 3px solid #64b5f6;
+}
+
+footer {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #eee;
+    color: #7f8c8d;
+    font-size: 0.9em;
+    text-align: center;
 }
 
 /* Basic Entity Styling */
@@ -54,7 +199,6 @@ body {
     box-shadow: 1px 1px 1px rgba(0,0,0,0.1); /* Subtle shadow */
 }
 
-
 /* --- Label-Specific Colors --- */
 /* Example for 'Trait' label */
 .entity.label-TRAIT {
@@ -67,5 +211,3 @@ body {
     color: white; /* White text on darker label */
     border-color: #606099;
 }
-
-/* Add more .label-YOUR_LABEL rules here if you have multiple entity types */
