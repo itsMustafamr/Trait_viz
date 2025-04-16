@@ -3,36 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Annotation Visualizer</title>
+    <title>PubMed Annotation Visualizer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <h1>PubMed Annotation Visualizer</h1>
 
-    <form id="pmid-form">
-        <label for="pmid">Enter PMID:</label>
-        <input type="text" id="pmid" name="pmid" required>
-        <button type="submit">Visualize</button>
-    </form>
+    <div class="form-container">
+        <div class="form-box">
+            <h2>Search by PMID</h2>
+            <form id="pmid-form">
+                <label for="pmid">Enter PubMed ID:</label>
+                <input type="text" id="pmid" name="pmid" placeholder="e.g., 17179536" required>
+                <button type="submit">Visualize</button>
+            </form>
+            <p class="form-note">Enter a PMID to visualize traits in title and abstract.</p>
+        </div>
+        
+        <div class="form-box">
+            <h2>Search by Keyword</h2>
+            <form id="search-form">
+                <label for="search-term">Search Term:</label>
+                <input type="text" id="search-term" name="term" placeholder="e.g., carcass composition" required>
+                <div class="search-options">
+                    <label>Search in:</label>
+                    <select id="search-scope" name="scope">
+                        <option value="local">Local Database</option>
+                        <option value="pubmed">PubMed Only</option>
+                        <option value="both">Both Sources</option>
+                    </select>
+                </div>
+                <button type="submit">Search</button>
+            </form>
+            <p class="form-note">Search for papers containing keywords in title or abstract.</p>
+        </div>
+    </div>
 
-    <div id="loading" style="display: none;">Loading...</div>
+    <div id="loading" style="display: none;">Loading... Please wait</div>
     <div id="error-message" style="color: red;"></div>
 
+    <div id="search-results">
+        <h2>Search Results</h2>
+        <!-- Search results will be populated here -->
+    </div>
+
     <div id="results">
-        <h2>Title</h2>
-        <div id="paper-title"></div>
+        <h2>Paper Details</h2>
+        <h3 id="paper-title"></h3>
+        <div id="paper-journal"></div>
+        <div id="paper-source"></div>
+        
+        <h4>Title with Trait Annotations</h4>
         <div id="viz-title" class="visualization"></div>
 
-        <h2>Abstract</h2>
+        <h4>Abstract</h4>
         <div id="paper-abstract" style="white-space: pre-wrap;"></div>
+        
+        <h4>Abstract with Trait Annotations</h4>
         <div id="viz-abstract" class="visualization"></div>
     </div>
 
     <hr>
     <footer>
-        <p>Loaded {{ num_papers }} papers and {{ num_traits }} traits.</p>
+        <p>Loaded {{ num_papers }} papers and {{ num_traits }} traits from local database. External papers fetched from PubMed API.</p>
+        <p>Visualization powered by dictionary matching approach.</p>
     </footer>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-</html>
