@@ -1,0 +1,28 @@
+{
+    "data_paths": {
+        "qtl_json": "QTL_text.json",
+        "trait_dictionary": "Trait dictionary.txt"
+    },
+    "visualization": {
+        "entity_colors": {
+            "TRAIT": {
+                "background": "#e0e0ff",
+                "border": "#a0a0cc",
+                "label_bg": "#a0a0cc",
+                "label_text": "#ffffff",
+                "label_border": "#606099"
+            }
+        }
+    },
+    "pubmed_api": {
+    "cache_results": true,
+    "cache_path": "pubmed_cache.json",
+    "request_delay": 0.5,
+    "max_search_results": 10
+    },
+    "server": { 
+        "host": "0.0.0.0",
+        "port": 5000,
+        "debug": true
+    }
+}
