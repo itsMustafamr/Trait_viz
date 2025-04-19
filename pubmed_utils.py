@@ -4,6 +4,9 @@ from time import sleep
 import json
 import os
 from datetime import datetime
+import httpx, asyncio
+
+
 
 # Cache for PubMed API results
 _pubmed_cache = {}
@@ -11,6 +14,11 @@ _cache_file = 'pubmed_cache.json'
 _use_cache = True
 _request_delay = 0.5
 
+async def _async_fetch(url: str) -> str:
+      async with httpx.AsyncClient(timeout=10) as client:
+          resp = await client.get(url)
+          resp.raise_for_status()
+          return resp.text
 def load_cache():
     """Load the PubMed cache from file."""
     global _pubmed_cache
@@ -77,11 +85,9 @@ def fetch_pubmed_paper(pmid):
     
     # Create the complete URL
     fetch_url = base_url + fetch_eutil + db + fetch_id + fetch_retmode
-    
+
     try:
-        # Call the API
-        response = urllib.request.urlopen(fetch_url)
-        xml_data = response.read().decode('utf-8')
+        xml_data = asyncio.run(_async_fetch(fetch_url))
         
         # Parse the response
         paper_info = {}

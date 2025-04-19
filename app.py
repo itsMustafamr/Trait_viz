@@ -2,6 +2,8 @@ import json
 import os
 import re
 import html
+from typing import List, Dict   
+import nlp_utils                            
 from flask import Flask, render_template, jsonify, request
 from pubmed_utils import fetch_pubmed_paper, search_pubmed, configure as configure_pubmed  # Import our new utility
 
@@ -11,86 +13,76 @@ app = Flask(__name__)
 CONFIG_PATH = 'config.json'
 
 # Load configuration from file
-try:
-    if os.path.exists(CONFIG_PATH):
-        with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-            config = json.load(f)
-        QTL_JSON_PATH = config['data_paths']['qtl_json']
-        TRAIT_DICT_PATH = config['data_paths']['trait_dictionary']
-        print(f"Loaded configuration from {CONFIG_PATH}")
-    else:
-        print(f"Config file {CONFIG_PATH} not found, using defaults")
-        QTL_JSON_PATH = 'QTL_text.json'
-        TRAIT_DICT_PATH = 'Trait dictionary.txt'
-        config = {
-            "server": {
-                "host": "0.0.0.0",
-                "port": 5000,
-                "debug": True
-            }
-        }
-except Exception as e:
-    print(f"Error loading config: {e}, using defaults")
-    QTL_JSON_PATH = 'QTL_text.json'
-    TRAIT_DICT_PATH = 'Trait dictionary.txt'
-    config = {
-        "server": {
-            "host": "0.0.0.0",
-            "port": 5000,
-            "debug": True
-        }
-    }
+
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
+        CONFIG = json.load(f)
+else:
+    CONFIG = {}
+
+QTL_JSON_PATH  = CONFIG.get("data_paths", {}).get("qtl_json", "QTL_text.json")
+TRAIT_DICT_PATH = CONFIG.get("data_paths", {}).get("trait_dictionary", "Trait dictionary.txt")
 
 # Configure PubMed utilities
-configure_pubmed(config)
+configure_pubmed(CONFIG)
 
 # --- Data Loading ---
-qtl_data = {}
-trait_list = []
+qtl_data: Dict[str, Dict] = {}
+trait_list: List[str] = []
 
 def load_data():
     """Loads QTL data and trait dictionary from files."""
     global qtl_data, trait_list
-    # Load QTL_text.json
-    try:
-        if not os.path.exists(QTL_JSON_PATH):
-             print(f"ERROR: {QTL_JSON_PATH} not found. Please place it in the application directory.")
-             qtl_data = {}
-        else:
-            with open(QTL_JSON_PATH, 'r', encoding='utf-8') as f: # Added encoding
-                qtl_data_list = json.load(f)
-            # Convert list to dict for faster lookup by PMID
-            qtl_data = {item['PMID']: item for item in qtl_data_list if 'PMID' in item} # Ensure PMID exists
-            print(f"Loaded {len(qtl_data)} records from {QTL_JSON_PATH}.")
-            if not qtl_data:
-                 print(f"WARNING: No records loaded from {QTL_JSON_PATH}. Ensure the file is not empty and contains valid JSON with 'PMID' keys.")
-
-    except json.JSONDecodeError:
-        print(f"ERROR: Could not decode {QTL_JSON_PATH}. Ensure it's valid JSON.")
-        qtl_data = {}
-    except Exception as e:
-        print(f"An unexpected error occurred loading {QTL_JSON_PATH}: {e}")
-        qtl_data = {}
-
-    # Load Trait dictionary.txt
-    try:
-        if not os.path.exists(TRAIT_DICT_PATH):
-             print(f"ERROR: {TRAIT_DICT_PATH} not found. Please place it in the application directory.")
-             trait_list = []
-        else:
-            with open(TRAIT_DICT_PATH, 'r', encoding='utf-8') as f: # Added encoding
-                # Read lines, strip whitespace, filter out empty lines
-                trait_list = [line.strip() for line in f if line.strip()]
-            print(f"Loaded {len(trait_list)} traits from {TRAIT_DICT_PATH}.")
-            if not trait_list:
-                 print(f"WARNING: No traits loaded from {TRAIT_DICT_PATH}. Ensure the file is not empty.")
-
-    except Exception as e:
-        print(f"An unexpected error occurred loading {TRAIT_DICT_PATH}: {e}")
-        trait_list = []
-
+    if os.path.exists(QTL_JSON_PATH):
+        with open(QTL_JSON_PATH, "r", encoding="utf-8") as f:
+            qtl_data_list = json.load(f)
+        qtl_data = {item["PMID"]: item for item in qtl_data_list if "PMID" in item}
+    if os.path.exists(TRAIT_DICT_PATH):
+        with open(TRAIT_DICT_PATH, "r", encoding="utf-8") as f:
+            trait_list = [ln.strip() for ln in f if ln.strip()]
 # Load data when the application starts
 load_data()
+
+# ---------- dictionary matcher ----------
+def dict_matches(text: str) -> List[Dict]:
+    matches = []
+    for trait in trait_list:
+        pattern = rf"\b{re.escape(trait)}\b"
+        for m in re.finditer(pattern, text, flags=re.IGNORECASE):
+            matches.append({"start": m.start(), "end": m.end(), "label": "TRAIT", "term": m.group(0)})
+    return matches
+# ---------- helpers ----------
+def deduplicate(matches: List[Dict]) -> List[Dict]:
+    """Remove overlaps; keep longer span then earlier span."""
+    matches.sort(key=lambda d: (d["start"], -(d["end"]-d["start"])))
+    out, last_end = [], -1
+    for m in matches:
+        if m["start"] >= last_end:
+            out.append(m)
+            last_end = m["end"]
+    return out
+
+COLOR_MAP = CONFIG.get("visualization", {}).get("entity_colors", {})
+
+def span_html(text: str, spans: List[Dict]) -> str:
+    if not spans:
+        return html.escape(text)
+    spans = sorted(spans, key=lambda s: s["start"])
+    buf, cur = [], 0
+    for sp in spans:
+        if sp["start"] > cur:
+            buf.append(html.escape(text[cur:sp["start"]]))
+        style = ""
+        col = COLOR_MAP.get(sp["label"], {})
+        if col:
+            style = f"background:{col.get('background')};border:1px solid {col.get('border')};"
+        buf.append(
+            f'<span class="entity" style="{style}">{html.escape(sp["term"])}'
+            f'<sup class="label">{sp["label"]}</sup></span>'
+        )
+        cur = sp["end"]
+    buf.append(html.escape(text[cur:]))
+    return "".join(buf)
 
 
 # --- Trait Finding Logic ---
@@ -167,58 +159,31 @@ def generate_visualization_html(text: str, matches: list[dict]) -> str:
 # --- Flask Routes ---
 @app.route('/')
 def index():
-    """Renders the main HTML page."""
-    num_papers = len(qtl_data)
-    num_traits = len(trait_list)
-    return render_template('index.html', num_papers=num_papers, num_traits=num_traits)
+    return render_template("index.html", num_papers=len(qtl_data), num_traits=len(trait_list))
 
-@app.route('/visualize', methods=['POST'])
+@app.route("/visualize", methods=["POST"])
 def visualize():
-    """Handles the PMID submission, finds traits, and returns visualization data."""
-    if not request.form or 'pmid' not in request.form:
-        return jsonify({'error': 'Missing PMID in request form.'}), 400
-
-    pmid = request.form.get('pmid').strip()
+    pmid = request.form.get("pmid", "").strip()
     if not pmid:
-        return jsonify({'error': 'PMID cannot be empty.'}), 400
+        return jsonify({"error": "PMID required"}), 400
 
-    # Lookup paper data in local database first
-    paper_info = qtl_data.get(pmid)
-    source = "local"
-    
-    # If not found locally, try fetching from PubMed API
-    if not paper_info:
-        print(f"PMID '{pmid}' not found in local data, trying PubMed API...")
-        paper_info = fetch_pubmed_paper(pmid)
-        source = "pubmed"
-        
-    # If still not found, return error
-    if not paper_info:
-        return jsonify({'error': f"PMID '{pmid}' not found in local data or PubMed."}), 404
+    paper = qtl_data.get(pmid) or fetch_pubmed_paper(pmid)
+    if paper is None:
+        return jsonify({"error": f"PMID {pmid} not found"}), 404
 
-    # Get title and abstract from paper info
-    original_title = paper_info.get('Title', '')
-    original_abstract = paper_info.get('Abstract', '')
+    title, abstract = paper.get("Title", ""), paper.get("Abstract", "")
 
-    # Find traits
-    title_matches = find_traits(original_title, trait_list)
-    abstract_matches = find_traits(original_abstract, trait_list)
+    combined_title  = deduplicate(nlp_utils.ner(title)  + dict_matches(title))
+    combined_abs    = deduplicate(nlp_utils.ner(abstract) + dict_matches(abstract))
 
-    # Generate visualization HTML
-    viz_title_html = generate_visualization_html(original_title, title_matches)
-    viz_abstract_html = generate_visualization_html(original_abstract, abstract_matches)
-
-    # Return data as JSON
     return jsonify({
-        'title': original_title,
-        'abstract': original_abstract,
-        'viz_title_html': viz_title_html,
-        'viz_abstract_html': viz_abstract_html,
-        'journal': paper_info.get('Journal', 'Not available'),
-        'source': source,  # Indicate where we found the paper
-        'error': None # Explicitly indicate no error
+        "title": title,
+        "abstract": abstract,
+        "journal": paper.get("Journal", "N/A"),
+        "source": "local" if pmid in qtl_data else "pubmed",
+        "viz_title_html": span_html(title, combined_title),
+        "viz_abstract_html": span_html(abstract, combined_abs)
     })
-
 # Add a search route for term-based search
 @app.route('/search', methods=['POST'])
 def search():
@@ -250,7 +215,7 @@ def search():
     pubmed_results = []
     if search_scope in ['pubmed', 'both']:
         try:
-            max_results = config.get('pubmed_api', {}).get('max_search_results', 10)
+            max_results = CONFIG.get('pubmed_api', {}).get('max_search_results', 10)
             papers = search_pubmed(search_term, max_results=max_results)
             for paper in papers:
                 pubmed_results.append({
@@ -275,9 +240,9 @@ def search():
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    host = config['server'].get('host', '0.0.0.0')
-    port = config['server'].get('port', 5000)
-    debug = config['server'].get('debug', True)
+    host = CONFIG['server'].get('host', '0.0.0.0')
+    port = CONFIG['server'].get('port', 5000)
+    debug = CONFIG['server'].get('debug', True)
     
     print(f"Starting server on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug)

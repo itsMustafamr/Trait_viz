@@ -211,3 +211,15 @@ footer {
     color: white; /* White text on darker label */
     border-color: #606099;
 }
+.entity { padding:2px 4px; border-radius:4px; margin:0 2px; }
+.entity .label { font-size:0.70em; margin-left:4px; opacity:0.8; }
+.hidden { opacity:0.15 !important; }
+.legend { margin-bottom:1em; }
+.legend-item { display:inline-block; padding:3px 6px; margin:0 4px; cursor:pointer; border-radius:3px; font-size:0.8em; }
+.legend-item span { display:inline-block; margin-left:4px; }    
+.legend-item:hover { background-color:#f5f5f5; }    
+.legend-item.selected { background-color:#f0f0f0; }
+.legend-item.selected span { font-weight:bold; }
+.legend-item.selected:hover { background-color:#e0e0e0; }
+.legend-item.selected:hover span { font-weight:normal; }
+.legend-item.selected:hover .label { opacity:1; }

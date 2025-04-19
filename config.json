@@ -3,15 +3,21 @@
         "qtl_json": "QTL_text.json",
         "trait_dictionary": "Trait dictionary.txt"
     },
+    "nlp": {
+    "scispacy_model": "en_ner_bionlp13cg_md"
+    },
     "visualization": {
         "entity_colors": {
-            "TRAIT": {
-                "background": "#e0e0ff",
-                "border": "#a0a0cc",
-                "label_bg": "#a0a0cc",
-                "label_text": "#ffffff",
-                "label_border": "#606099"
-            }
+        "TRAIT"  : {"background": "#e0e0ff", "border": "#a0a0cc", "label_bg": "#a0a0cc", "label_text": "#ffffff", "label_border": "#606099"},
+        "GENE_OR_GENE_PRODUCT": {"background": "#fff8e1", "border": "#ffecb3"},
+        "CANCER": {"background": "#ffebee", "border": "#ffcdd2"},
+        "CELL": {"background": "#e8f5e9", "border": "#c8e6c9"},
+        "SIMPLE_CHEMICAL": {"background": "#e3f2fd", "border": "#bbdefb"},
+        "CHEMICAL": {"background": "#e3f2fd", "border": "#bbdefb"},
+        "CHEMICAL_SUBSTANCE": {"background": "#e3f2fd", "border": "#bbdefb"},
+        "CHEMICAL_ENTITY": {"background": "#e3f2fd", "border": "#bbdefb"},
+        "MOLECULAR_ENTITY": {"background": "#e3f2fd", "border": "#bbdefb"},      
+        "GENE": {"background": "#e3f2fd", "border": "#bbdefb"}
         }
     },
     "pubmed_api": {
@@ -20,9 +26,9 @@
     "request_delay": 0.5,
     "max_search_results": 10
     },
-    "server": { 
-        "host": "0.0.0.0",
-        "port": 5000,
-        "debug": true
+    "server": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": true
     }
 }

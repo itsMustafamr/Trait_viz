@@ -188,3 +188,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+const legendDiv = document.getElementById('legend');
+function buildLegend(colors) {
+  legendDiv.innerHTML = '';
+  Object.entries(colors).forEach(([label, col]) => {
+    const box = document.createElement('span');
+    box.className = 'legend-item';
+    box.style.background = col.background;
+    box.style.border = `1px solid ${col.border}`;
+    box.textContent = label;
+    box.dataset.label = label;
+    box.onclick = () => {
+      document.querySelectorAll(`.label[textContent='${label}']`).forEach(e => {
+        e.parentElement.classList.toggle('hidden');
+      });
+    };
+    legendDiv.appendChild(box);
+  });
+}
+fetch('/static/config.json')  // served as static for JS access
+  .then(r => r.json())
+  .then(cfg => buildLegend(cfg.visualization.entity_colors));
