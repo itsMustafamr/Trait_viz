@@ -2,10 +2,11 @@ import json
 import os
 import re
 import html
-from typing import List, Dict   
-import nlp_utils                            
+from typing import List, Dict
+import nlp_utils
 from flask import Flask, render_template, jsonify, request, send_from_directory
-from pubmed_utils import fetch_pubmed_paper, search_pubmed, configure as configure_pubmed
+from pubmed_utils import fetch_pubmed_paper, search_pubmed, configure as configure_pubmed, save_cache
+import urllib.parse # Make sure this import is present
 
 app = Flask(__name__)
 
@@ -49,9 +50,9 @@ def dict_matches(text: str) -> List[Dict]:
         pattern = rf"\b{re.escape(trait)}\b"
         for m in re.finditer(pattern, text, flags=re.IGNORECASE):
             matches.append({
-                "start": m.start(), 
-                "end": m.end(), 
-                "label": "TRAIT", 
+                "start": m.start(),
+                "end": m.end(),
+                "label": "TRAIT",
                 "term": m.group(0),
                 "source": "dictionary"
             })
@@ -81,19 +82,24 @@ def span_html(text: str, spans: List[Dict]) -> str:
         style = ""
         col = COLOR_MAP.get(sp["label"], {})
         if col:
-            style = f"background:{col.get('background')};border:1px solid {col.get('border')};"
-        
+            bg_color = col.get('background', '#ffffff') # Default background
+            border_color = col.get('border', '#cccccc') # Default border
+            # Ensure proper color format (e.g., #RRGGBB)
+            style = f"background:{bg_color};border:1px solid {border_color};"
+
         # Add data attributes for entity metadata
         source = sp.get("source", "model")
         metadata = f'data-entity-id="{sp["start"]}-{sp["end"]}" data-entity-label="{sp["label"]}" data-entity-source="{source}"'
-        
+
         buf.append(
             f'<span class="entity interactive-entity" {metadata} style="{style}">{html.escape(sp["term"])}'
-            f'<sup class="label">{sp["label"]}</sup></span>'
+            # Use data-entity-label to apply styles via CSS if needed, keep label simple
+            f'<sup class="label" data-entity-label="{sp["label"]}">{sp["label"]}</sup></span>'
         )
         cur = sp["end"]
     buf.append(html.escape(text[cur:]))
     return "".join(buf)
+
 
 # --- Trait Finding Logic ---
 def find_traits(text: str, trait_list: list[str]) -> list[dict]:
@@ -106,7 +112,8 @@ def find_traits(text: str, trait_list: list[str]) -> list[dict]:
         try:
             if not trait:
                 continue
-            pattern = r'\b' + re.escape(trait) + r'\b'
+            # Use word boundaries for exact matching, case-insensitive
+            pattern = r'(?<!\w)' + re.escape(trait) + r'(?!\w)'
             for match in re.finditer(pattern, text, re.IGNORECASE):
                 all_matches.append({
                     'start': match.start(),
@@ -122,17 +129,26 @@ def find_traits(text: str, trait_list: list[str]) -> list[dict]:
     if not all_matches:
         return []
 
+    # Sort matches primarily by start index, secondarily by end index (longer matches first)
     all_matches.sort(key=lambda x: (x['start'], -x['end']))
 
+    # Filter out overlapping matches, keeping the longest one that starts first
     filtered_matches = []
     last_match_end = -1
 
     for match in all_matches:
+        # Only add if the current match starts after or at the end of the last added match
         if match['start'] >= last_match_end:
             filtered_matches.append(match)
             last_match_end = match['end']
+        # Optional: If you prefer keeping the longest match even if it overlaps slightly later
+        # elif match['end'] > last_match_end:
+        #    # Check if this match is significantly longer and replaces the previous one
+        #    # This logic can become complex, stick to non-overlapping for simplicity first
+        #    pass
 
     return filtered_matches
+
 
 # --- Dependency Parsing ---
 def get_sentence_dependencies(text):
@@ -140,9 +156,19 @@ def get_sentence_dependencies(text):
     return nlp_utils.get_dependencies(text)
 
 # --- Flask Routes ---
+
+# NEW: Route for the landing page
 @app.route('/')
-def index():
-    return render_template("index.html", num_papers=len(qtl_data), num_traits=len(trait_list))
+def landing_page():
+    """Serves the new landing page (index.html)."""
+    return render_template("index.html")
+
+# NEW: Route for the main visualizer application page
+@app.route('/visualizer')
+def visualizer_app():
+    """Serves the main annotation visualizer page (visualizer.html)."""
+    # Pass necessary counts to the template
+    return render_template("visualizer.html", num_papers=len(qtl_data), num_traits=len(trait_list))
 
 @app.route('/static/<path:path>')
 def serve_static(path):
@@ -160,36 +186,50 @@ def visualize():
 
     title, abstract = paper.get("Title", ""), paper.get("Abstract", "")
 
-    # Process annotations
-    combined_title = deduplicate(nlp_utils.ner(title) + dict_matches(title))
-    combined_abs = deduplicate(nlp_utils.ner(abstract) + dict_matches(abstract))
-    
+    # Process annotations using both NER and dictionary matching
+    title_ner_matches = nlp_utils.ner(title)
+    title_dict_matches = find_traits(title, trait_list) # Use find_traits here
+    combined_title = deduplicate(title_ner_matches + title_dict_matches)
+
+    abstract_ner_matches = nlp_utils.ner(abstract)
+    abstract_dict_matches = find_traits(abstract, trait_list) # Use find_traits here
+    combined_abs = deduplicate(abstract_ner_matches + abstract_dict_matches)
+
     # Generate statistics for each entity type
     entity_stats = {}
     for entity in combined_title + combined_abs:
         label = entity["label"]
-        if label not in entity_stats:
-            entity_stats[label] = {"count": 0, "terms": {}}
-        
-        entity_stats[label]["count"] += 1
+        source = entity.get("source", "model") # Get source
         term = entity["term"].lower()
+
+        if label not in entity_stats:
+            entity_stats[label] = {"count": 0, "terms": {}, "sources": {"model": 0, "dictionary": 0}}
+
+        entity_stats[label]["count"] += 1
+        entity_stats[label]["sources"][source] += 1 # Increment source count
+
         if term not in entity_stats[label]["terms"]:
-            entity_stats[label]["terms"][term] = 0
-        entity_stats[label]["terms"][term] += 1
-    
+            entity_stats[label]["terms"][term] = {"count": 0, "sources": {"model": 0, "dictionary": 0}}
+
+        entity_stats[label]["terms"][term]["count"] += 1
+        entity_stats[label]["terms"][term]["sources"][source] += 1 # Increment term source count
+
+
     # Convert term dictionaries to sorted lists
     for label in entity_stats:
         terms_dict = entity_stats[label]["terms"]
         # Sort by frequency, then alphabetically
         entity_stats[label]["terms"] = [
-            {"term": term, "count": count}
-            for term, count in sorted(
-                terms_dict.items(), 
-                key=lambda x: (-x[1], x[0])
+            {"term": term, "count": details["count"], "sources": details["sources"]} # Include sources
+            for term, details in sorted(
+                terms_dict.items(),
+                key=lambda x: (-x[1]["count"], x[0]) # Sort by count desc, then term asc
             )
         ]
 
+
     return jsonify({
+        "pmid": pmid, # Return PMID
         "title": title,
         "abstract": abstract,
         "journal": paper.get("Journal", "N/A"),
@@ -205,34 +245,48 @@ def get_entity_info():
     data = request.json
     if not data or 'term' not in data:
         return jsonify({"error": "Entity term required"}), 400
-    
-    term = data['term'].lower()
+
+    term = data['term'] # Keep original case for display if needed
+    term_lower = term.lower()
     label = data.get('label', '')
-    
-    # For demonstration purposes - in a real app, you might query a database
-    # or external API for more detailed information about the entity
-    
+    source = data.get('source', 'Unknown')
+
+    # Basic info
     entity_info = {
-        "term": data['term'],
+        "term": term,
         "label": label,
-        "source": data.get('source', 'Unknown'),
-        "definition": f"Definition information would be retrieved for {data['term']}",
+        "source": source,
+        "definition": f"Definition for '{term}' (Label: {label}, Source: {source}) would be retrieved here.",
         "external_links": [
-            {"name": "PubMed", "url": f"https://pubmed.ncbi.nlm.nih.gov/?term={urllib.parse.quote(term)}"},
+            {"name": "PubMed Search", "url": f"https://pubmed.ncbi.nlm.nih.gov/?term={urllib.parse.quote(term)}"},
+            {"name": "Google Scholar", "url": f"https://scholar.google.com/scholar?q={urllib.parse.quote(term)}"},
             {"name": "Wikipedia", "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(term.replace(' ', '_'))}"}
         ]
     }
-    
-    # If it's a trait, include trait-specific information
-    if label.upper() == 'TRAIT':
-        # You could look up trait-specific databases here
-        entity_info["trait_info"] = {
-            "category": "Example trait category",
-            "related_traits": ["Related trait 1", "Related trait 2"],
-            "synonyms": ["Synonym 1", "Synonym 2"]
-        }
-    
+
+    # If it's a trait and from the dictionary, add specific trait info
+    if label.upper() == 'TRAIT' and source.lower() == 'dictionary':
+         # Example: check if trait exists in a more detailed local dictionary if available
+         # Or provide links to trait-specific databases
+         entity_info["trait_details"] = {
+             "description": f"This trait '{term}' was identified from the local dictionary.",
+             "links": [
+                  # Add links to relevant trait databases if applicable, e.g., GWAS Catalog, OMIM
+                  {"name": "GWAS Catalog", "url": f"https://www.ebi.ac.uk/gwas/search?query={urllib.parse.quote(term)}"},
+             ]
+         }
+    # Add specific info for other entity types if needed
+    elif label.upper() == 'GENE_OR_GENE_PRODUCT':
+         entity_info["gene_details"] = {
+             "description": f"Gene/protein identified as '{term}'. Further details require database lookups.",
+              "links": [
+                  {"name": "NCBI Gene", "url": f"https://www.ncbi.nlm.nih.gov/gene/?term={urllib.parse.quote(term)}"},
+                  {"name": "UniProt", "url": f"https://www.uniprot.org/uniprotkb?query={urllib.parse.quote(term)}"}
+              ]
+         }
+
     return jsonify(entity_info)
+
 
 @app.route('/parse_sentence', methods=['POST'])
 def parse_sentence():
@@ -240,17 +294,29 @@ def parse_sentence():
     data = request.json
     if not data or 'text' not in data:
         return jsonify({"error": "Sentence text required"}), 400
-    
+
     sentence = data['text'].strip()
     if not sentence:
         return jsonify({"error": "Empty sentence"}), 400
-    
+
     # Get dependency parse
     try:
-        parse_data = get_sentence_dependencies(sentence)
+        # Ensure text is clean before parsing
+        cleaned_sentence = re.sub(r'\s+', ' ', sentence).strip()
+        if len(cleaned_sentence) > 1000: # Add a length limit for safety/performance
+             return jsonify({"error": "Sentence too long for parsing."}), 400
+
+        parse_data = get_sentence_dependencies(cleaned_sentence)
+        # Check if parsing returned an error structure
+        if parse_data.get("error"):
+             return jsonify({"error": f"Parsing failed: {parse_data['error']}"}), 500
         return jsonify(parse_data)
+
     except Exception as e:
-        return jsonify({"error": f"Error parsing sentence: {str(e)}"}), 500
+        # Log the exception for debugging
+        app.logger.error(f"Error parsing sentence '{sentence[:50]}...': {str(e)}")
+        return jsonify({"error": f"An unexpected error occurred during sentence parsing: {str(e)}"}), 500
+
 
 @app.route('/search', methods=['POST'])
 def search():
@@ -260,57 +326,76 @@ def search():
 
     search_term = request.form.get('term').strip()
     search_scope = request.form.get('scope', 'local')  # Options: local, pubmed, both
-    
+
     if not search_term:
         return jsonify({'error': 'Search term cannot be empty.'}), 400
-        
+
     # First search local data
     local_results = []
     if search_scope in ['local', 'both']:
+        search_term_lower = search_term.lower()
         for pmid, paper in qtl_data.items():
             title = paper.get('Title', '').lower()
             abstract = paper.get('Abstract', '').lower()
-            if search_term.lower() in title or search_term.lower() in abstract:
+            # More robust search: check if term is a whole word or substring
+            # Using 'in' for substring matching. For whole word, use regex: rf'\b{re.escape(search_term_lower)}\b'
+            if search_term_lower in title or search_term_lower in abstract:
                 local_results.append({
                     'pmid': pmid,
                     'title': paper.get('Title', 'No title'),
                     'journal': paper.get('Journal', 'No journal info'),
                     'source': 'local'
                 })
-    
+
     # Then search PubMed if requested
     pubmed_results = []
     if search_scope in ['pubmed', 'both']:
         try:
             max_results = CONFIG.get('pubmed_api', {}).get('max_search_results', 10)
-            papers = search_pubmed(search_term, max_results=max_results)
+            papers = search_pubmed(search_term, max_results=max_results) # Assuming search_pubmed handles async/errors
             for paper in papers:
-                pubmed_results.append({
-                    'pmid': paper.get('PMID', ''),
-                    'title': paper.get('Title', 'No title'),
-                    'journal': paper.get('Journal', 'No journal info'),
-                    'source': 'pubmed'
-                })
+                 # Avoid adding duplicates if already found locally
+                 if not any(r['pmid'] == paper.get('PMID', '') for r in local_results):
+                    pubmed_results.append({
+                        'pmid': paper.get('PMID', ''),
+                        'title': paper.get('Title', 'No title'),
+                        'journal': paper.get('Journal', 'No journal info'),
+                        'source': 'pubmed'
+                    })
         except Exception as e:
-            print(f"Error searching PubMed: {e}")
-            # Continue with local results only
-    
-    # Combine results
+            # Log the error for debugging
+            app.logger.error(f"Error searching PubMed for term '{search_term}': {e}")
+            # Optionally inform the user about the PubMed search failure
+            # return jsonify({'error': f'PubMed search failed: {e}. Only local results shown.'}), 500
+            # Or just continue with local results silently
+
+    # Combine results (local first, then PubMed)
     all_results = local_results + pubmed_results
-    
+
+    # Limit total results if necessary (e.g., to 50 total)
+    max_total_results = 50
+    if len(all_results) > max_total_results:
+        all_results = all_results[:max_total_results]
+
+
     return jsonify({
         'results': all_results,
         'count': len(all_results),
         'local_count': len(local_results),
-        'pubmed_count': len(pubmed_results)
+        'pubmed_count': len(pubmed_results),
+        'query': search_term, # Return the original query
+        'scope': search_scope # Return the scope used
     })
+
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    import urllib.parse  # Add this import
     host = CONFIG.get('server', {}).get('host', '0.0.0.0')
     port = CONFIG.get('server', {}).get('port', 5000)
     debug = CONFIG.get('server', {}).get('debug', True)
-    
-    print(f"Starting server on {host}:{port} (debug={debug})")
+
+    print(f"Starting server on http://{host}:{port} (debug={debug})")
+    # Make sure cache is saved on exit if modified
+    import atexit
+    atexit.register(save_cache)
     app.run(host=host, port=port, debug=debug)
