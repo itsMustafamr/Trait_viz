@@ -1,4 +1,5 @@
-# PubMed Annotation Visualizer
+# TraitViz - PubMed Annotation Visualizer
+By - Mohammed and Srikanth
 
 A web application for visualizing trait annotations in scientific papers from PubMed and local datasets.
 
@@ -68,3 +69,4 @@ The local database (`QTL_text.json`) contains papers in the following format:
 ## PubMed API Integration
 
 When a PMID is not found in the local database, the application will automatically try to retrieve it from the PubMed API.
+
