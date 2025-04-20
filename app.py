@@ -4,8 +4,8 @@ import re
 import html
 from typing import List, Dict   
 import nlp_utils                            
-from flask import Flask, render_template, jsonify, request
-from pubmed_utils import fetch_pubmed_paper, search_pubmed, configure as configure_pubmed  # Import our new utility
+from flask import Flask, render_template, jsonify, request, send_from_directory
+from pubmed_utils import fetch_pubmed_paper, search_pubmed, configure as configure_pubmed
 
 app = Flask(__name__)
 
@@ -13,7 +13,6 @@ app = Flask(__name__)
 CONFIG_PATH = 'config.json'
 
 # Load configuration from file
-
 if os.path.exists(CONFIG_PATH):
     with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
         CONFIG = json.load(f)
@@ -49,8 +48,15 @@ def dict_matches(text: str) -> List[Dict]:
     for trait in trait_list:
         pattern = rf"\b{re.escape(trait)}\b"
         for m in re.finditer(pattern, text, flags=re.IGNORECASE):
-            matches.append({"start": m.start(), "end": m.end(), "label": "TRAIT", "term": m.group(0)})
+            matches.append({
+                "start": m.start(), 
+                "end": m.end(), 
+                "label": "TRAIT", 
+                "term": m.group(0),
+                "source": "dictionary"
+            })
     return matches
+
 # ---------- helpers ----------
 def deduplicate(matches: List[Dict]) -> List[Dict]:
     """Remove overlaps; keep longer span then earlier span."""
@@ -76,14 +82,18 @@ def span_html(text: str, spans: List[Dict]) -> str:
         col = COLOR_MAP.get(sp["label"], {})
         if col:
             style = f"background:{col.get('background')};border:1px solid {col.get('border')};"
+        
+        # Add data attributes for entity metadata
+        source = sp.get("source", "model")
+        metadata = f'data-entity-id="{sp["start"]}-{sp["end"]}" data-entity-label="{sp["label"]}" data-entity-source="{source}"'
+        
         buf.append(
-            f'<span class="entity" style="{style}">{html.escape(sp["term"])}'
+            f'<span class="entity interactive-entity" {metadata} style="{style}">{html.escape(sp["term"])}'
             f'<sup class="label">{sp["label"]}</sup></span>'
         )
         cur = sp["end"]
     buf.append(html.escape(text[cur:]))
     return "".join(buf)
-
 
 # --- Trait Finding Logic ---
 def find_traits(text: str, trait_list: list[str]) -> list[dict]:
@@ -101,8 +111,9 @@ def find_traits(text: str, trait_list: list[str]) -> list[dict]:
                 all_matches.append({
                     'start': match.start(),
                     'end': match.end(),
-                    'label': 'Trait',
-                    'term': match.group(0)
+                    'label': 'TRAIT',
+                    'term': match.group(0),
+                    'source': 'dictionary'
                 })
         except re.error as e:
             print(f"Regex error for trait '{trait}': {e}")
@@ -123,43 +134,19 @@ def find_traits(text: str, trait_list: list[str]) -> list[dict]:
 
     return filtered_matches
 
-
-# --- Visualization HTML Generation ---
-def generate_visualization_html(text: str, matches: list[dict]) -> str:
-    """Generates an HTML string with matched traits highlighted using spans."""
-    if not matches or not text:
-        return html.escape(text)
-
-    matches.sort(key=lambda x: x['start'])
-    result_parts = []
-    last_end = 0
-
-    for match in matches:
-        start, end = match['start'], match['end']
-        label = match['label']
-        term_text = match.get('term', text[start:end])
-
-        if start > last_end:
-            result_parts.append(html.escape(text[last_end:start]))
-
-        result_parts.append(
-            f'<span class="entity label-{label.upper()}">'
-            f'<span class="entity-text">{html.escape(term_text)}</span>'
-            f'<span class="entity-label">{html.escape(label)}</span>'
-            f'</span>'
-        )
-        last_end = end
-
-    if last_end < len(text):
-        result_parts.append(html.escape(text[last_end:]))
-
-    return "".join(result_parts)
-
+# --- Dependency Parsing ---
+def get_sentence_dependencies(text):
+    """Get dependency parse for a sentence using spaCy"""
+    return nlp_utils.get_dependencies(text)
 
 # --- Flask Routes ---
 @app.route('/')
 def index():
     return render_template("index.html", num_papers=len(qtl_data), num_traits=len(trait_list))
+
+@app.route('/static/<path:path>')
+def serve_static(path):
+    return send_from_directory('static', path)
 
 @app.route("/visualize", methods=["POST"])
 def visualize():
@@ -173,8 +160,34 @@ def visualize():
 
     title, abstract = paper.get("Title", ""), paper.get("Abstract", "")
 
-    combined_title  = deduplicate(nlp_utils.ner(title)  + dict_matches(title))
-    combined_abs    = deduplicate(nlp_utils.ner(abstract) + dict_matches(abstract))
+    # Process annotations
+    combined_title = deduplicate(nlp_utils.ner(title) + dict_matches(title))
+    combined_abs = deduplicate(nlp_utils.ner(abstract) + dict_matches(abstract))
+    
+    # Generate statistics for each entity type
+    entity_stats = {}
+    for entity in combined_title + combined_abs:
+        label = entity["label"]
+        if label not in entity_stats:
+            entity_stats[label] = {"count": 0, "terms": {}}
+        
+        entity_stats[label]["count"] += 1
+        term = entity["term"].lower()
+        if term not in entity_stats[label]["terms"]:
+            entity_stats[label]["terms"][term] = 0
+        entity_stats[label]["terms"][term] += 1
+    
+    # Convert term dictionaries to sorted lists
+    for label in entity_stats:
+        terms_dict = entity_stats[label]["terms"]
+        # Sort by frequency, then alphabetically
+        entity_stats[label]["terms"] = [
+            {"term": term, "count": count}
+            for term, count in sorted(
+                terms_dict.items(), 
+                key=lambda x: (-x[1], x[0])
+            )
+        ]
 
     return jsonify({
         "title": title,
@@ -182,9 +195,63 @@ def visualize():
         "journal": paper.get("Journal", "N/A"),
         "source": "local" if pmid in qtl_data else "pubmed",
         "viz_title_html": span_html(title, combined_title),
-        "viz_abstract_html": span_html(abstract, combined_abs)
+        "viz_abstract_html": span_html(abstract, combined_abs),
+        "entity_statistics": entity_stats
     })
-# Add a search route for term-based search
+
+@app.route('/get_entity_info', methods=['POST'])
+def get_entity_info():
+    """Get additional information about an entity"""
+    data = request.json
+    if not data or 'term' not in data:
+        return jsonify({"error": "Entity term required"}), 400
+    
+    term = data['term'].lower()
+    label = data.get('label', '')
+    
+    # For demonstration purposes - in a real app, you might query a database
+    # or external API for more detailed information about the entity
+    
+    entity_info = {
+        "term": data['term'],
+        "label": label,
+        "source": data.get('source', 'Unknown'),
+        "definition": f"Definition information would be retrieved for {data['term']}",
+        "external_links": [
+            {"name": "PubMed", "url": f"https://pubmed.ncbi.nlm.nih.gov/?term={urllib.parse.quote(term)}"},
+            {"name": "Wikipedia", "url": f"https://en.wikipedia.org/wiki/{urllib.parse.quote(term.replace(' ', '_'))}"}
+        ]
+    }
+    
+    # If it's a trait, include trait-specific information
+    if label.upper() == 'TRAIT':
+        # You could look up trait-specific databases here
+        entity_info["trait_info"] = {
+            "category": "Example trait category",
+            "related_traits": ["Related trait 1", "Related trait 2"],
+            "synonyms": ["Synonym 1", "Synonym 2"]
+        }
+    
+    return jsonify(entity_info)
+
+@app.route('/parse_sentence', methods=['POST'])
+def parse_sentence():
+    """Get dependency parsing for a sentence"""
+    data = request.json
+    if not data or 'text' not in data:
+        return jsonify({"error": "Sentence text required"}), 400
+    
+    sentence = data['text'].strip()
+    if not sentence:
+        return jsonify({"error": "Empty sentence"}), 400
+    
+    # Get dependency parse
+    try:
+        parse_data = get_sentence_dependencies(sentence)
+        return jsonify(parse_data)
+    except Exception as e:
+        return jsonify({"error": f"Error parsing sentence: {str(e)}"}), 500
+
 @app.route('/search', methods=['POST'])
 def search():
     """Searches for papers by keyword."""
@@ -240,9 +307,10 @@ def search():
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    host = CONFIG['server'].get('host', '0.0.0.0')
-    port = CONFIG['server'].get('port', 5000)
-    debug = CONFIG['server'].get('debug', True)
+    import urllib.parse  # Add this import
+    host = CONFIG.get('server', {}).get('host', '0.0.0.0')
+    port = CONFIG.get('server', {}).get('port', 5000)
+    debug = CONFIG.get('server', {}).get('debug', True)
     
     print(f"Starting server on {host}:{port} (debug={debug})")
     app.run(host=host, port=port, debug=debug)

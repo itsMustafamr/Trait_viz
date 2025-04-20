@@ -1,0 +1,106 @@
+/* Dependency Visualization Styles */
+
+:root {
+    /* Entity colors are set programmatically based on config in script.js */
+    --color-trait: #e0e0ff;
+    --color-gene_or_gene_product: #fff8e1;
+    --color-simple_chemical: #e0f7fa;
+    --color-cancer: #ffebee;
+    --color-cell: #f1f8e9;
+}
+
+/* Dependency Parsing */
+.dependency-container {
+    width: 100%;
+    height: 400px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    margin-bottom: 1rem;
+}
+
+.dependency-svg {
+    min-width: 100%;
+    min-height: 400px;
+    user-select: none;
+}
+
+.dependency-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+}
+
+.dependency-controls button {
+    padding: 0.25rem 0.5rem;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.dependency-controls button:hover {
+    background-color: #e0e0e0;
+}
+
+/* Token styling */
+.token text {
+    font-family: 'Arial', sans-serif;
+    font-weight: 500;
+}
+
+.pos-tag {
+    fill: #666;
+    font-style: italic;
+}
+
+/* Arc styling */
+.dependency-arc .arc-label {
+    fill: #444;
+    font-weight: bold;
+}
+
+.dependency-arc path:hover {
+    stroke: #4285f4;
+    stroke-width: 2.5;
+}
+
+.token:hover text {
+    fill: #4285f4;
+    font-weight: bold;
+}
+
+/* Tab styling for parsing visualization */
+.tab-button {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    padding: 0.5rem 1rem;
+    margin-right: 0.25rem;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    cursor: pointer;
+}
+
+.tab-button:hover {
+    background-color: #e6e6e6;
+}
+
+.tab-button.active {
+    background-color: #fff;
+    border-bottom: 1px solid #fff;
+    font-weight: bold;
+}
+
+.tab-panel {
+    display: none;
+    border: 1px solid #ddd;
+    padding: 1rem;
+    border-top: none;
+    background-color: #fff;
+}
+
+.tab-panel.active {
+    display: block;
+}
