@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced PubMed Annotation Visualizer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='dependency.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='fixes.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Enhanced PubMed Annotation Visualizer</h1>
+        <div class="legend" id="legend"></div>
+    </header>
+
+    <nav>
+        <ul class="tabs">
+            <li><a href="#search-section" class="active" data-tab="search-section">Search</a></li>
+            <li><a href="#analysis-section" data-tab="analysis-section">Analysis</a></li>
+            <li><a href="#about-section" data-tab="about-section">About</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <!-- Search Section -->
+        <section id="search-section" class="tab-content active">
+            <div class="form-container">
+                <div class="form-box">
+                    <h2>Search by PMID</h2>
+                    <form id="pmid-form">
+                        <label for="pmid">Enter PubMed ID:</label>
+                        <input type="text" id="pmid" name="pmid" placeholder="e.g., 17179536" required>
+                        <button type="submit">Visualize</button>
+                    </form>
+                    <p class="form-note">Enter a PMID to visualize traits in title and abstract.</p>
+                </div>
+                
+                <div class="form-box">
+                    <h2>Search by Keyword</h2>
+                    <form id="search-form">
+                        <label for="search-term">Search Term:</label>
+                        <input type="text" id="search-term" name="term" placeholder="e.g., carcass composition" required>
+                        <div class="search-options">
+                            <label>Search in:</label>
+                            <select id="search-scope" name="scope">
+                                <option value="local">Local Database</option>
+                                <option value="pubmed">PubMed Only</option>
+                                <option value="both">Both Sources</option>
+                            </select>
+                        </div>
+                        <button type="submit">Search</button>
+                    </form>
+                    <p class="form-note">Search for papers containing keywords in title or abstract.</p>
+                </div>
+            </div>
+
+            <div id="loading" class="loading-spinner">
+                <div class="spinner"></div>
+                <p>Loading... Please wait</p>
+            </div>
+            <div id="error-message" class="error-message"></div>
+
+            <div id="search-results" class="results-container">
+                <h2>Search Results</h2>
+                <!-- Search results will be populated here -->
+            </div>
+        </section>
+
+        <!-- Analysis Section -->
+        <section id="analysis-section" class="tab-content">
+            <div id="results" class="paper-details">
+                <div class="paper-header">
+                    <div class="paper-metadata">
+                        <h2>Paper Details</h2>
+                        <h3 id="paper-title" class="paper-title"></h3>
+                        <div id="paper-journal" class="journal-info"></div>
+                        <div id="paper-source" class="source-info"></div>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="btn-parse-title" class="btn-action">Parse Title</button>
+                        <button id="btn-export-data" class="btn-action btn-export">Export Data</button>
+                    </div>
+                </div>
+                
+                <div class="tabs analysis-tabs">
+                    <button class="tab-button active" data-tab="tab-annotations">Annotations</button>
+                    <button class="tab-button" data-tab="tab-parsing">Dependency Parsing</button>
+                    <button class="tab-button" data-tab="tab-statistics">Statistics</button>
+                </div>
+                
+                <!-- Annotations Tab -->
+                <div id="tab-annotations" class="tab-panel active">
+                    <div class="content-section">
+                        <h4>Title with Annotations</h4>
+                        <div id="viz-title" class="visualization"></div>
+                    </div>
+                    
+                    <div class="content-section">
+                        <h4>Abstract</h4>
+                        <div id="paper-abstract" class="abstract-text"></div>
+                    </div>
+                    
+                    <div class="content-section">
+                        <h4>Abstract with Annotations</h4>
+                        <div id="viz-abstract" class="visualization"></div>
+                        <div class="sentence-selector">
+                            <label for="sentence-select">Select sentence for parsing:</label>
+                            <select id="sentence-select">
+                                <option value="">-- Select a sentence --</option>
+                            </select>
+                            <button id="btn-parse-sentence" disabled>Parse Selected Sentence</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dependency Parsing Tab -->
+                <div id="tab-parsing" class="tab-panel">
+                    <div class="content-section">
+                        <h4>Dependency Parse Visualization</h4>
+                        <div id="dependency-container" class="dependency-container">
+                            <div id="dependency-visualization"></div>
+                        </div>
+                        <div class="dependency-controls">
+                            <button id="btn-zoom-in">Zoom In</button>
+                            <button id="btn-zoom-out">Zoom Out</button>
+                            <button id="btn-reset-zoom">Reset</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Statistics Tab -->
+                <div id="tab-statistics" class="tab-panel">
+                    <div class="content-section">
+                        <h4>Entity Statistics</h4>
+                        <div id="entity-stats" class="entity-stats">
+                            <div id="entity-chart-container" class="chart-container">
+                                <canvas id="entity-chart"></canvas>
+                            </div>
+                            <div id="entity-table-container" class="table-container">
+                                <!-- Entity statistics table will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- About Section -->
+        <section id="about-section" class="tab-content">
+            <div class="about-container">
+                <h2>About PubMed Annotation Visualizer</h2>
+                <p>This tool helps researchers visualize and analyze entity annotations in scientific papers from PubMed.</p>
+                
+                <h3>Features</h3>
+                <ul>
+                    <li>Search papers by PMID or keywords</li>
+                    <li>Visualize entity annotations in title and abstract</li>
+                    <li>Interactive entity exploration with detailed information</li>
+                    <li>Dependency parsing visualization for syntactic analysis</li>
+                    <li>Statistical analysis of entity distributions</li>
+                </ul>
+                
+                <h3>How to Use</h3>
+                <ol>
+                    <li>Search for a paper using PMID or keywords</li>
+                    <li>View the paper's details and annotations</li>
+                    <li>Click on any highlighted entity to see detailed information</li>
+                    <li>Select sentences for dependency parsing</li>
+                    <li>View entity statistics in the Statistics tab</li>
+                </ol>
+            </div>
+        </section>
+    </main>
+
+    <!-- Entity Detail Modal -->
+    <div id="entity-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="entity-modal-title">Entity Details</h2>
+            <div id="entity-modal-content">
+                <!-- Entity details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Loaded {{ num_papers }} papers and {{ num_traits }} traits from local database. External papers fetched from PubMed API.</p>
+        <p>Visualization powered by dictionary matching and spaCy NLP.</p>
+    </footer>
+
+    <!-- Load libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='dependency.js') }}"></script>
+    <script src="{{ url_for('static', filename='export.js') }}"></script>
+</body>
+</html>
