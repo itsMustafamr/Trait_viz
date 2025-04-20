@@ -1,7 +1,6 @@
 flask>=2.3
 spacy>=3.7,<3.8
 scispacy==0.5.4
-# model wheel – pip handles URL
-#https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/en_ner_bionlp13cg_md-0.5.4.tar.gz
+https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.5.4/en_ner_bionlp13cg_md-0.5.4.tar.gz
 httpx>=0.27
 en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.0/en_core_web_sm-3.7.0-py3-none-any.whl
