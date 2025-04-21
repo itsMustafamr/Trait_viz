@@ -305,3 +305,62 @@ window.themeToggle = {
         }
     }
 };
+
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', () => {
+    // Get the original toggleTheme function
+    const originalToggleTheme = window.themeToggle.toggle;
+    
+    // Override the toggle function to add credits animation
+    window.themeToggle.toggle = function() {
+        // Call the original toggle first
+        originalToggleTheme();
+        
+        // Check if theme is now active
+        const isSpaceTheme = document.body.classList.contains('space-theme');
+        
+        // Get developer cards
+        const developerCards = document.querySelectorAll('.developer-card');
+        if (!developerCards.length) return;
+        
+        if (isSpaceTheme) {
+            // When switching to space theme
+            
+            // Reset animation by removing and adding the elements
+            developerCards.forEach((card, index) => {
+                const parent = card.parentNode;
+                const cardClone = card.cloneNode(true);
+                
+                // Remove the original
+                card.remove();
+                
+                // Add the clone back (forces animation to restart)
+                setTimeout(() => {
+                    parent.appendChild(cardClone);
+                }, 50 * index); // Stagger the re-adding
+            });
+            
+            // Change avatar text to space-themed emoji
+            setTimeout(() => {
+                const avatars = document.querySelectorAll('.avatar-circle');
+                if (avatars[0]) avatars[0].innerHTML = '🚀';
+                if (avatars[1]) avatars[1].innerHTML = '✨';
+            }, 300);
+            
+        } else {
+            // When switching back to regular theme
+            
+            // Reset animations
+            developerCards.forEach(card => {
+                card.style.animation = 'none';
+                card.offsetHeight; // Force reflow
+                card.style.animation = '';
+            });
+            
+            // Change avatar text back to initials
+            const avatars = document.querySelectorAll('.avatar-circle');
+            if (avatars[0]) avatars[0].innerHTML = 'MR';
+            if (avatars[1]) avatars[1].innerHTML = 'SR';
+        }
+    };
+});
