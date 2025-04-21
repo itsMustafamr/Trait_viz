@@ -1,0 +1,480 @@
+/* Space Theme CSS for Trait Explorer Visualizer */
+
+/* Only apply when theme is active */
+body.space-theme {
+    margin: 0;
+    font-family: 'Orbitron', sans-serif;
+    background: linear-gradient(to bottom, #000000, #0a0a2a);
+    color: white;
+    overflow-x: hidden;
+}
+
+/* Header styling */
+body.space-theme header {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+body.space-theme h1 {
+    text-shadow: 0 0 10px #4facfe, 0 0 20px #4facfe;
+    letter-spacing: 3px;
+    color: white;
+}
+
+body.space-theme h2, 
+body.space-theme h3, 
+body.space-theme h4 {
+    color: white;
+    text-shadow: 0 0 5px #4facfe;
+}
+
+/* Navigation */
+body.space-theme nav {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+body.space-theme .tabs {
+    border-bottom: 1px solid rgba(79, 172, 254, 0.3);
+}
+
+body.space-theme .tabs a {
+    color: #4facfe;
+    background-color: transparent;
+    padding: 10px 20px;
+    border: none;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: bold;
+    position: relative;
+    border-bottom: none;
+}
+
+body.space-theme .tabs a.active {
+    color: white;
+    text-shadow: 0 0 10px #4facfe;
+    border-bottom-color: #4facfe;
+}
+
+body.space-theme .tabs a:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #4facfe;
+    transition: width 0.3s ease;
+}
+
+body.space-theme .tabs a.active:after {
+    width: 100%;
+    box-shadow: 0 0 10px #4facfe;
+}
+
+/* Tab Content */
+body.space-theme .tab-content {
+    background-color: rgba(10, 10, 42, 0.7);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+}
+
+/* Form styling */
+body.space-theme .form-box {
+    background-color: rgba(0, 0, 20, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(79, 172, 254, 0.5);
+    box-shadow: 0 0 15px rgba(79, 172, 254, 0.2);
+}
+
+body.space-theme .form-box h2 {
+    border-bottom-color: rgba(79, 172, 254, 0.3);
+    color: white;
+}
+
+body.space-theme input[type="text"], 
+body.space-theme select {
+    background-color: rgba(0, 0, 20, 0.7);
+    border: 1px solid #4facfe;
+    color: white;
+}
+
+body.space-theme input[type="text"]:focus, 
+body.space-theme select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+}
+
+body.space-theme button {
+    background-color: transparent;
+    color: #4facfe;
+    border: 1px solid #4facfe;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: all 0.3s ease;
+}
+
+body.space-theme button:hover {
+    background-color: rgba(79, 172, 254, 0.2);
+    box-shadow: 0 0 10px #4facfe;
+}
+
+body.space-theme .btn-glow {
+    box-shadow: 0 0 20px #4facfe;
+}
+
+body.space-theme .btn-glow:hover {
+    box-shadow: 0 0 30px #4facfe, 0 0 40px #4facfe;
+    transform: scale(1.05);
+}
+
+body.space-theme .form-note {
+    color: #88ccff;
+}
+
+/* Loading spinner */
+body.space-theme .loading-spinner {
+    color: white;
+}
+
+body.space-theme .spinner {
+    border-color: rgba(79, 172, 254, 0.3);
+    border-top-color: #4facfe;
+}
+
+/* Error message */
+body.space-theme .error-message {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #ff8888;
+    border-left: 4px solid #dc3545;
+}
+
+/* Results container */
+body.space-theme .results-container, 
+body.space-theme .paper-details {
+    background-color: rgba(0, 0, 20, 0.5);
+    border: 1px solid rgba(79, 172, 254, 0.5);
+}
+
+body.space-theme .paper-header {
+    border-bottom-color: rgba(79, 172, 254, 0.3);
+}
+
+body.space-theme .paper-title {
+    color: white;
+    text-shadow: 0 0 10px #4facfe;
+}
+
+body.space-theme .journal-info, 
+body.space-theme .source-info {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Content sections */
+body.space-theme .content-section h4 {
+    border-bottom-color: rgba(79, 172, 254, 0.3);
+    color: white;
+}
+
+body.space-theme .abstract-text {
+    background-color: rgba(0, 0, 20, 0.7);
+    border-left: 3px solid #4facfe;
+    color: white;
+}
+
+body.space-theme .visualization {
+    background-color: rgba(0, 0, 20, 0.7);
+    border: 1px solid rgba(79, 172, 254, 0.3);
+}
+
+/* Entity styling */
+body.space-theme .entity:hover {
+    box-shadow: 0 0 5px #4facfe;
+    transform: translateY(-1px);
+}
+
+/* Tab buttons */
+body.space-theme .tab-button {
+    background-color: transparent;
+    color: #4facfe;
+    border: none;
+    position: relative;
+}
+
+body.space-theme .tab-button.active {
+    color: white;
+    text-shadow: 0 0 10px #4facfe;
+    background-color: transparent;
+    border-bottom: none;
+}
+
+body.space-theme .tab-button:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #4facfe;
+    transition: width 0.3s ease;
+}
+
+body.space-theme .tab-button.active:after {
+    width: 100%;
+    box-shadow: 0 0 10px #4facfe;
+}
+
+body.space-theme .tab-panel {
+    background-color: transparent;
+    border: none;
+}
+
+/* Dependency visualization */
+body.space-theme .dependency-container {
+    border: 1px solid rgba(79, 172, 254, 0.5);
+    background-color: rgba(0, 0, 20, 0.7);
+}
+
+body.space-theme .dependency-controls button {
+    background-color: transparent;
+    border: 1px solid #4facfe;
+    color: #4facfe;
+}
+
+body.space-theme .dependency-controls button:hover {
+    background-color: rgba(79, 172, 254, 0.2);
+}
+
+/* Chart styling */
+body.space-theme .chart-container {
+    background-color: rgba(0, 0, 20, 0.7);
+    border: 1px solid rgba(79, 172, 254, 0.5);
+}
+
+body.space-theme .entity-table {
+    background-color: rgba(0, 0, 20, 0.5);
+}
+
+body.space-theme .entity-table th {
+    background-color: rgba(79, 172, 254, 0.2);
+    color: white;
+}
+
+body.space-theme .entity-table td {
+    border-bottom: 1px solid rgba(79, 172, 254, 0.1);
+}
+
+body.space-theme .entity-table tr:nth-child(even) {
+    background-color: rgba(0, 0, 20, 0.3);
+}
+
+/* Search results */
+body.space-theme .search-summary {
+    background-color: rgba(79, 172, 254, 0.1);
+    color: white;
+}
+
+body.space-theme .search-results-list li {
+    border-bottom: 1px solid rgba(79, 172, 254, 0.2);
+}
+
+body.space-theme .search-results-list li:hover {
+    background-color: rgba(79, 172, 254, 0.1);
+}
+
+body.space-theme .pmid-link {
+    color: #4facfe;
+}
+
+body.space-theme .source-badge {
+    background-color: rgba(79, 172, 254, 0.2);
+    color: #4facfe;
+    border: 1px solid #4facfe;
+}
+
+/* Modal styling */
+body.space-theme .modal-content {
+    background: linear-gradient(to bottom, #0a0a2a, #000000);
+    border: 1px solid #4facfe;
+    box-shadow: 0 0 20px #4facfe;
+    color: white;
+}
+
+body.space-theme .close-modal {
+    color: #4facfe;
+}
+
+body.space-theme .info-section {
+    background-color: rgba(0, 0, 20, 0.7);
+}
+
+body.space-theme .info-section h3 {
+    color: white;
+    border-bottom-color: rgba(79, 172, 254, 0.3);
+}
+
+body.space-theme .info-section h4 {
+    color: #88ccff;
+}
+
+body.space-theme a {
+    color: #4facfe;
+}
+
+/* About section */
+body.space-theme .about-container {
+    background-color: rgba(0, 0, 20, 0.5);
+    border: 1px solid rgba(79, 172, 254, 0.5);
+}
+
+body.space-theme .about-container h2 {
+    color: white;
+}
+
+body.space-theme .about-container h3 {
+    color: #88ccff;
+    border-bottom-color: rgba(79, 172, 254, 0.3);
+}
+
+/* Footer */
+body.space-theme footer {
+    background-color: transparent;
+    border-top: 1px solid rgba(79, 172, 254, 0.3);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Stars background */
+.star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 0.7;
+    animation: twinkle 5s infinite;
+    display: none;
+}
+
+body.space-theme .star {
+    display: block;
+}
+
+@keyframes twinkle {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
+
+/* Space particles effect */
+.space-particle {
+    position: absolute;
+    width: 1px;
+    height: 20px;
+    background: linear-gradient(to bottom, transparent, #4facfe, transparent);
+    animation: fall 8s linear infinite;
+    display: none;
+}
+
+body.space-theme .space-particle {
+    display: block;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(-100vh) rotate(45deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(45deg);
+        opacity: 0;
+    }
+}
+
+/* ThreeJS container */
+#threejs-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0;
+    pointer-events: none;
+}
+
+body.space-theme #threejs-container {
+    opacity: 1;
+}
+
+/* Theme toggle button */
+#theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid #4facfe;
+    color: #4facfe;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 20px;
+    transition: all 0.3s ease;
+}
+
+#theme-toggle:hover {
+    transform: rotate(180deg);
+    box-shadow: 0 0 15px #4facfe;
+}
+
+/* Legend styling for space theme */
+body.space-theme .legend {
+    background-color: transparent;
+}
+
+body.space-theme .legend-item {
+    background-color: rgba(10, 10, 42, 0.5);
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 5px;
+    transition: all 0.3s ease;
+}
+
+body.space-theme .legend-item:hover {
+    box-shadow: 0 0 5px #4facfe;
+}
+
+body.space-theme .legend-item.selected {
+    box-shadow: 0 0 0 2px #4facfe;
+}
+
+/* Entity export menu */
+body.space-theme .export-options {
+    background: rgba(10, 10, 42, 0.9);
+    border: 1px solid #4facfe;
+    box-shadow: 0 0 10px rgba(79, 172, 254, 0.5);
+}
+
+body.space-theme .export-option {
+    color: white;
+}
+
+body.space-theme .export-option:hover {
+    background-color: rgba(79, 172, 254, 0.2);
+}
+
+/* Handle sentence selector */
+body.space-theme .sentence-selector {
+    background-color: rgba(0, 0, 20, 0.7);
+    border: 1px dashed #4facfe;
+}
