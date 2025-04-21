@@ -4,11 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced PubMed Annotation Visualizer</title>
+    <!-- Standard CSS first (loaded before space theme for proper overrides) -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='dependency.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='fixes.css') }}">
+    
+    <!-- Space theme CSS (will only apply when body has space-theme class) -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='space-theme.css') }}">
+    
+    <!-- Google Fonts for Space Theme -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- THREE.js for space background (loaded conditionally, but won't run until theme is active) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <!-- ThreeJS Background Container (hidden by default) -->
+    <div id="threejs-container"></div>
+    
+    <!-- Stars Background Container (hidden by default) -->
+    <div id="stars-container"></div>
+    
     <header>
         <h1>Enhanced PubMed Annotation Visualizer</h1>
         <div class="legend" id="legend"></div>
@@ -194,5 +212,8 @@
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script src="{{ url_for('static', filename='dependency.js') }}"></script>
     <script src="{{ url_for('static', filename='export.js') }}"></script>
+    
+    <!-- Space theme toggle script (should be loaded last) -->
+    <script src="{{ url_for('static', filename='space-theme.js') }}"></script>
 </body>
 </html>
