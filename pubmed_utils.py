@@ -160,10 +160,10 @@ def fetch_pubmed_paper(pmid):
         print(f"Error fetching paper from PubMed: {e}")
         return None
 
-def search_pubmed(query, max_results=10):
+def search_pubmed(query, max_results=10, start_date=None, end_date=None):
     """
-    Searches PubMed for papers matching a query.
-    
+    Searches PubMed for papers matching a query, optionally filtering by date.
+
     Args:
         query (str): The search query
         max_results (int): Maximum number of results to return
@@ -177,14 +177,47 @@ def search_pubmed(query, max_results=10):
 
     # esearch settings
     search_eutil = 'esearch.fcgi?'
-    search_term = '&term=' + urllib.parse.quote(query)
+    search_term_param = '&term=' + urllib.parse.quote(query)
     search_usehistory = '&usehistory=y'
     search_retmax = f'&retmax={max_results}'
+    search_datetype = '&datetype=pdat' # Search by publication date
+    search_mindate = ''
+    search_maxdate = ''
 
-    # call the esearch command for the query and read the web result
-    search_url = base_url + search_eutil + db + search_term + search_usehistory + search_retmax
-    f = urllib.request.urlopen(search_url)
-    search_data = f.read().decode('utf-8')
+    # Format dates for PubMed API (YYYY/MM/DD) and add date parameters if provided
+    if start_date:
+        try:
+            # Validate and format start date
+            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+            search_mindate = f"&mindate={start_dt.strftime('%Y/%m/%d')}"
+        except ValueError:
+            print(f"Warning: Invalid start date format '{start_date}'. Should be YYYY-MM-DD. Ignoring.")
+            start_date = None # Reset if invalid
+
+    if end_date:
+        try:
+            # Validate and format end date
+            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+            search_maxdate = f"&maxdate={end_dt.strftime('%Y/%m/%d')}"
+        except ValueError:
+            print(f"Warning: Invalid end date format '{end_date}'. Should be YYYY-MM-DD. Ignoring.")
+            end_date = None # Reset if invalid
+
+    # Construct the final search URL
+    search_url = (
+        base_url + search_eutil + db + search_term_param +
+        search_usehistory + search_retmax + search_datetype +
+        search_mindate + search_maxdate
+    )
+
+    print(f"PubMed Search URL: {search_url}") # Log the URL for debugging
+
+    try:
+        f = urllib.request.urlopen(search_url)
+        search_data = f.read().decode('utf-8')
+    except Exception as e:
+        print(f"Error during PubMed search request: {e}")
+        return [] # Return empty list on search error
 
     # extract the PMIDs from the search results
     pmid_list = re.findall(r'<Id>(\d+)</Id>', search_data)

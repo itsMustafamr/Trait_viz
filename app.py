@@ -326,6 +326,8 @@ def search():
 
     search_term = request.form.get('term').strip()
     search_scope = request.form.get('scope', 'local')  # Options: local, pubmed, both
+    start_date = request.form.get('start_date') # Get start date (YYYY-MM-DD)
+    end_date = request.form.get('end_date')     # Get end date (YYYY-MM-DD)
 
     if not search_term:
         return jsonify({'error': 'Search term cannot be empty.'}), 400
@@ -352,7 +354,13 @@ def search():
     if search_scope in ['pubmed', 'both']:
         try:
             max_results = CONFIG.get('pubmed_api', {}).get('max_search_results', 10)
-            papers = search_pubmed(search_term, max_results=max_results) # Assuming search_pubmed handles async/errors
+            # Pass dates to search_pubmed (implementation needed in pubmed_utils.py)
+            papers = search_pubmed(
+                search_term,
+                max_results=max_results,
+                start_date=start_date,
+                end_date=end_date
+            )
             for paper in papers:
                  # Avoid adding duplicates if already found locally
                  if not any(r['pmid'] == paper.get('PMID', '') for r in local_results):

@@ -462,7 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const term = searchInput.value.trim();
             const searchScopeSelect = document.getElementById('search-scope');
             const searchScope = searchScopeSelect ? searchScopeSelect.value : 'local';
-            
+            const startDateInput = document.getElementById('start-date');
+            const endDateInput = document.getElementById('end-date');
+            const startDate = startDateInput ? startDateInput.value : '';
+            const endDate = endDateInput ? endDateInput.value : '';
+
             if (!term) {
                 errorDiv.textContent = 'Please enter a search term.';
                 loadingDiv.style.display = 'none';
@@ -473,7 +477,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const formData = new FormData();
                 formData.append('term', term);
                 formData.append('scope', searchScope);
-                
+                // Add dates to form data if they exist
+                if (startDate) {
+                    formData.append('start_date', startDate);
+                }
+                if (endDate) {
+                    formData.append('end_date', endDate);
+                }
+
                 const response = await fetch('/search', {
                     method: 'POST',
                     body: formData

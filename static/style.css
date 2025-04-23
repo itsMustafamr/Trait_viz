@@ -161,6 +161,10 @@ button:disabled {
     margin-top: 1rem;
 }
 
+.search-options {
+    margin-bottom: 1rem; /* Add spacing below search options */
+}
+
 /* Loading Spinner */
 .loading-spinner {
     display: none;
