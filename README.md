@@ -6,9 +6,9 @@ A web application for visualizing trait annotations in scientific papers from Pu
 ## Features
 
 - Search by PMID to retrieve papers from a local database or from PubMed API
-- Search by keyword to find relevant papers in the local database
-- Visualize trait annotations in the title and abstract of papers
-- Highlight traits using dictionary matching
+- Search by keyword to find relevant papers in the local database or PubMed
+- Visualize trait and other biomedical entity annotations (e.g., genes, diseases) in the title and abstract
+- Highlight entities using both dictionary matching (for traits) and a pre-trained biomedical NER model (scispaCy)
 
 ## Installation
 
@@ -16,8 +16,10 @@ A web application for visualizing trait annotations in scientific papers from Pu
 2. Install the required dependencies:
 
 ```bash
-pip install flask
+pip install -r requirements.txt
 ```
+
+   This will install Flask, spaCy, scispaCy, the required language models, and other dependencies.
 
 3. Place your data files in the project directory:
    - `QTL_text.json`: JSON file containing paper data
@@ -38,9 +40,11 @@ python app.py
 
 - `app.py`: Main Flask application
 - `pubmed_utils.py`: Utilities for PubMed API integration
-- `static/script.js`: Frontend JavaScript code
-- `static/style.css`: CSS styling
-- `templates/index.html`: HTML template
+- `nlp_utils.py`: Utilities for spaCy/scispaCy NLP processing (NER, Dependency Parsing)
+- `pubmed_utils.py`: Utilities for PubMed API integration
+- `config.json`: Configuration file (optional)
+- `static/`: Contains CSS and JavaScript for the frontend
+- `templates/`: Contains HTML templates (index.html, visualizer.html)
 
 ## Adding More Traits
 
@@ -69,4 +73,3 @@ The local database (`QTL_text.json`) contains papers in the following format:
 ## PubMed API Integration
 
 When a PMID is not found in the local database, the application will automatically try to retrieve it from the PubMed API.
-

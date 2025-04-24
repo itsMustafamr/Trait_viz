@@ -618,13 +618,23 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const parseData = await response.json();
-            
+
+            // Check if the backend returned an error within the JSON payload
+            if (parseData.error) {
+                throw new Error(parseData.error); // Throw error to be caught below
+            }
+
             // Render the visualization using dependency.js
-            renderDependencyGraph(parseData);
-            
+            renderDependencyGraph(parseData); // Only call if no error
+
         } catch (error) {
             console.error('Error in sentence parsing:', error);
             errorDiv.textContent = 'Failed to parse sentence: ' + error.message;
+            // Clear the visualization area on error
+            const container = document.getElementById('dependency-visualization');
+            if (container) {
+                container.innerHTML = '<p class="error-text">Could not generate dependency parse.</p>';
+            }
         } finally {
             loadingDiv.style.display = 'none';
         }

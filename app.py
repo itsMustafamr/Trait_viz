@@ -307,9 +307,20 @@ def parse_sentence():
              return jsonify({"error": "Sentence too long for parsing."}), 400
 
         parse_data = get_sentence_dependencies(cleaned_sentence)
+        # --- DEBUGGING: Log the data being sent to the frontend ---
+        import logging
+        app.logger.setLevel(logging.DEBUG) # Ensure debug messages are shown
+        app.logger.debug(f"Parse data for frontend: {json.dumps(parse_data, indent=2)}")
+        # --- END DEBUGGING ---
+
         # Check if parsing returned an error structure
         if parse_data.get("error"):
-             return jsonify({"error": f"Parsing failed: {parse_data['error']}"}), 500
+             # Return error as JSON, but with a 200 OK status initially,
+             # as the frontend JS expects to parse JSON even on logical errors.
+             # The JS will then handle the 'error' key.
+             # Alternatively, could return 4xx/5xx and adjust JS fetch error handling.
+             return jsonify(parse_data), 200 # Or return 500 if preferred
+
         return jsonify(parse_data)
 
     except Exception as e:
