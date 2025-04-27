@@ -18,6 +18,7 @@ A web application for visualizing trait annotations in scientific papers from Pu
 ```bash
 pip install -r requirements.txt
 ```
+requirements.txt has all the dependencies for this web app.
 
    This will install Flask, spaCy, scispaCy, the required language models, and other dependencies.
 
