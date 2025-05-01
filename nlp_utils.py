@@ -148,6 +148,17 @@ def get_dependencies(text: str) -> Dict[str, Any]:
             "error": f"Parsing failed: {str(e)}"
         }
 
+
+import spacy
+from spacy import displacy
+
+nlp_displacy = spacy.load("en_core_web_sm")  # Use small model for browser rendering
+
+def render_displacy(sentence: str) -> str:
+    doc = nlp_displacy(sentence)
+    html = displacy.render(doc, style="dep", page=False)  # SVG only, no full HTML
+    return html
+
 # --- Sentence Splitting Function (Optional - Keep if used elsewhere) ---
 # If this function is needed, refactor to use _get_nlp() as well
 # @functools.lru_cache(maxsize=128)
