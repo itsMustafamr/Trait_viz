@@ -703,6 +703,55 @@ async function parseSentence(text) {
     }
 }
 
+
+
+function updateDisplaCyTheme() {
+    const svg = document.querySelector('#displacy-container svg');
+    if (svg) {
+        // Remove DisplaCy's inline background and apply theme color
+        svg.style.background = 'transparent';
+        svg.style.color = document.body.classList.contains('space-theme') 
+            ? '#4facfe'   // light blue for dark mode
+            : '#000000';  // black for light mode
+    }
+}
+
+
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+themeToggle.addEventListener('click', () => {
+    document.body.classList.toggle('space-theme');
+    updateDisplaCyTheme(); // Apply theme-dependent colors
+});
+}
+
+
+function colorCodeDisplacyTags() {
+    const isSpaceTheme = document.body.classList.contains('space-theme');
+
+    if (isSpaceTheme) {
+        // In space theme, use a consistent color (CSS will handle it)
+        document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
+            tag.setAttribute('fill', '#4facfe');  // light blue or neon
+        });
+    } else {
+        // Light theme: color-code by POS tag
+        document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
+            const text = tag.textContent.trim();
+            if (text === 'NOUN') tag.setAttribute('fill', '#a29bfe');
+            else if (text === 'VERB') tag.setAttribute('fill', '#7DCFB6');
+            else if (text === 'ADJ') tag.setAttribute('fill', '#8C2155');
+            else if (text === 'ADV') tag.setAttribute('fill', '#81ecec');
+            else if (text === 'DET') tag.setAttribute('fill', '#F79256');
+            else if (text === 'PRON') tag.setAttribute('fill', '#fd79a8');
+            else if (text === 'CCONJ') tag.setAttribute('fill', '#74b9ff');
+            else if (text === 'ADP') tag.setAttribute('fill', '#2E5077');
+            else if (text === 'SCONJ') tag.setAttribute('fill', '#226F54');
+            else if (text === 'NUM') tag.setAttribute('fill', '#CC3F0C');
+            else tag.setAttribute('fill', '#333333'); // default for others
+        });
+    }
+}
     
     // Handle zoom controls for dependency parsing
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
@@ -774,56 +823,4 @@ async function parseSentence(text) {
     initTabs();
     initModal();
     initEntityInteractions();
-
-    function updateDisplaCyTheme() {
-        const svg = document.querySelector('#displacy-container svg');
-        if (svg) {
-            // Remove DisplaCy's inline background and apply theme color
-            svg.style.background = 'transparent';
-            svg.style.color = document.body.classList.contains('space-theme') 
-                ? '#4facfe'   // light blue for dark mode
-                : '#000000';  // black for light mode
-        }
-    }
-
-
-    const themeToggle = document.getElementById('theme-toggle');
-if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-        document.body.classList.toggle('space-theme');
-        updateDisplaCyTheme(); // Apply theme-dependent colors
-    });
-}
-
-    
-    function colorCodeDisplacyTags() {
-        const isSpaceTheme = document.body.classList.contains('space-theme');
-    
-        if (isSpaceTheme) {
-            // In space theme, use a consistent color (CSS will handle it)
-            document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
-                tag.setAttribute('fill', '#4facfe');  // light blue or neon
-            });
-        } else {
-            // Light theme: color-code by POS tag
-            document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
-                const text = tag.textContent.trim();
-                if (text === 'NOUN') tag.setAttribute('fill', '#a29bfe');
-                else if (text === 'VERB') tag.setAttribute('fill', '#7DCFB6');
-                else if (text === 'ADJ') tag.setAttribute('fill', '#8C2155');
-                else if (text === 'ADV') tag.setAttribute('fill', '#81ecec');
-                else if (text === 'DET') tag.setAttribute('fill', '#F79256');
-                else if (text === 'PRON') tag.setAttribute('fill', '#fd79a8');
-                else if (text === 'CCONJ') tag.setAttribute('fill', '#74b9ff');
-                else if (text === 'ADP') tag.setAttribute('fill', '#2E5077');
-                else if (text === 'SCONJ') tag.setAttribute('fill', '#226F54');
-                else if (text === 'NUM') tag.setAttribute('fill', '#CC3F0C');
-                else tag.setAttribute('fill', '#333333'); // default for others
-            });
-        }
-    }
-
-    
-    
-
 });
