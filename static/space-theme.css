@@ -756,3 +756,7 @@ body.space-theme .author-info p {
     margin: 0;
     font-size: 0.85rem;
 }
+
+body.space-theme .author-info a {
+    color: #4facfe;
+}
