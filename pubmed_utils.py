@@ -134,8 +134,55 @@ def fetch_pubmed_paper(pmid):
                 citation += f":{pages}"
             
             paper_info['Journal'] = citation
+            
+            # Add publication date
+            if year:
+                pub_date = year
+                month_match = re.search(r'<PubDate>.*?<Month>(.*?)</Month>.*?</PubDate>', xml_data)
+                day_match = re.search(r'<PubDate>.*?<Day>(.*?)</Day>.*?</PubDate>', xml_data)
+                
+                month = month_match.group(1) if month_match else ""
+                day = day_match.group(1) if day_match else ""
+                
+                paper_info['PublicationDate'] = f"{year} {month} {day}".strip()
         else:
             paper_info['Journal'] = "Journal information not available"
+        
+        # Extract author information
+        authors = []
+        author_list_match = re.findall(r'<Author.*?>(.*?)</Author>', xml_data, re.DOTALL)
+        
+        for author_xml in author_list_match:
+            last_name_match = re.search(r'<LastName>(.*?)</LastName>', author_xml)
+            fore_name_match = re.search(r'<ForeName>(.*?)</ForeName>', author_xml)
+            collective_name_match = re.search(r'<CollectiveName>(.*?)</CollectiveName>', author_xml)
+            affiliation_match = re.search(r'<Affiliation>(.*?)</Affiliation>', author_xml)
+            
+            author_info = {}
+            
+            if last_name_match and fore_name_match:
+                author_info["name"] = f"{last_name_match.group(1)} {fore_name_match.group(1)}"
+            elif collective_name_match:
+                author_info["name"] = collective_name_match.group(1)
+            else:
+                continue  # Skip if no name found
+            
+            if affiliation_match:
+                author_info["affiliation"] = affiliation_match.group(1).strip()
+            else:
+                author_info["affiliation"] = ""
+            
+            authors.append(author_info)
+        
+        # Add authors to paper info
+        paper_info['Authors'] = authors
+        
+        # Create author display string
+        if authors:
+            author_names = [author.get("name", "") for author in authors]
+            paper_info['AuthorDisplay'] = ", ".join(author_names)
+        else:
+            paper_info['AuthorDisplay'] = "No author information available"
         
         # Add category (not available from API, default to "External")
         paper_info['Category'] = "External"
@@ -159,7 +206,7 @@ def fetch_pubmed_paper(pmid):
     except Exception as e:
         print(f"Error fetching paper from PubMed: {e}")
         return None
-
+    
 def search_pubmed(query, max_results=10, start_date=None, end_date=None):
     """
     Searches PubMed for papers matching a query, optionally filtering by date.

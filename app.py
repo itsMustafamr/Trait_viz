@@ -95,28 +95,30 @@ def span_html(text: str, spans: List[Dict]) -> str:
     for sp in spans:
         if sp["start"] > cur:
             buf.append(html.escape(text[cur:sp["start"]]))
-        style = ""
+        
         col = COLOR_MAP.get(sp["label"], {})
-        if col:
-            bg_color = col.get('background', '#ffffff') # Default background
-            border_color = col.get('border', '#cccccc') # Default border
-            # Ensure proper color format (e.g., #RRGGBB)
-            style = f"background:{bg_color};border:1px solid {border_color};"
-
+        
+        # Always use background and border from the color map
+        bg_color = col.get('background', '#ffffff')
+        border_color = col.get('border', '#cccccc')
+        
+        # Set text color to black for good contrast on colored backgrounds
+        text_color = "#000000"  
+        
+        # Add explicit styling to ensure visibility
+        style = f"background-color:{bg_color};border:1px solid {border_color};color:{text_color};"
+        
         # Add data attributes for entity metadata
         source = sp.get("source", "model")
         metadata = f'data-entity-id="{sp["start"]}-{sp["end"]}" data-entity-label="{sp["label"]}" data-entity-source="{source}"'
 
         buf.append(
             f'<span class="entity interactive-entity" {metadata} style="{style}">{html.escape(sp["term"])}'
-            # Use data-entity-label to apply styles via CSS if needed, keep label simple
             f'<sup class="label" data-entity-label="{sp["label"]}">{sp["label"]}</sup></span>'
         )
         cur = sp["end"]
     buf.append(html.escape(text[cur:]))
     return "".join(buf)
-
-
 # --- Trait Finding Logic ---
 def find_traits(text: str, trait_list: list[str]) -> list[dict]:
     """Finds occurrences of traits in the text using dictionary matching."""
@@ -230,6 +232,12 @@ def visualize():
         entity_stats[label]["terms"][term]["count"] += 1
         entity_stats[label]["terms"][term]["sources"][source] += 1 # Increment term source count
 
+    # Format author information
+    author_display = ""
+    if paper.get("Authors"):
+        authors = paper.get("Authors", [])
+        author_names = [author.get("name", "") for author in authors]
+        author_display = ", ".join(author_names)
 
     # Convert term dictionaries to sorted lists
     for label in entity_stats:
@@ -245,10 +253,13 @@ def visualize():
 
 
     return jsonify({
-        "pmid": pmid, # Return PMID
+        "pmid": pmid,
         "title": title,
         "abstract": abstract,
         "journal": paper.get("Journal", "N/A"),
+        "authors": paper.get("Authors", []),  # Full author data
+        "author_display": author_display,    # Formatted author string
+        "publication_date": paper.get("PublicationDate", ""),
         "source": "local" if pmid in qtl_data else "pubmed",
         "viz_title_html": span_html(title, combined_title),
         "viz_abstract_html": span_html(abstract, combined_abs),

@@ -29,6 +29,32 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize theme from localStorage
     initializeTheme();
+    
+    // Observer for DOM changes to handle dynamically added entities
+    const observer = new MutationObserver((mutations) => {
+        let entitiesAdded = false;
+        mutations.forEach(mutation => {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && (
+                        node.classList.contains('entity') || 
+                        node.querySelector('.entity')
+                    )) {
+                        entitiesAdded = true;
+                    }
+                });
+            }
+        });
+        
+        if (entitiesAdded && document.body.classList.contains('space-theme')) {
+            updateEntityStyles();
+        }
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
 });
 
 /**
@@ -57,10 +83,14 @@ function toggleTheme() {
         createStars();
         createSpaceParticles();
         initThreeJS();
+        updateEntityStyles();
+        updateDisplaCyTheme();
         console.log('Space theme enabled');
     } else {
         // Disable space theme
         cleanupThemeElements();
+        resetEntityStyles();
+        updateDisplaCyTheme();
         console.log('Space theme disabled');
     }
 }
@@ -76,6 +106,7 @@ function initializeTheme() {
         createStars();
         createSpaceParticles();
         initThreeJS();
+        updateEntityStyles();
         console.log('Space theme initialized from saved preference');
     }
 }
@@ -288,6 +319,177 @@ function cleanupThemeElements() {
     const starsContainer = document.getElementById('stars-container');
     if (starsContainer) {
         starsContainer.innerHTML = '';
+    }
+}
+
+/**
+ * Update entity styles for space theme
+ */
+function updateEntityStyles() {
+    document.querySelectorAll('.entity').forEach(entity => {
+        // Get the entity label
+        const entityType = entity.getAttribute('data-entity-label');
+        if (!entityType) return;
+        
+        // Add enhanced visibility
+        entity.style.display = 'inline-block';
+        entity.style.boxShadow = '0 0 5px rgba(79, 172, 254, 0.3)';
+        
+        // Ensure text is visible - keep black text for readability on colored backgrounds
+        entity.style.color = '#000000';
+        
+        // Handle entity background colors based on type
+        switch(entityType) {
+            case 'TRAIT':
+                entity.style.backgroundColor = '#e0e0ff';
+                entity.style.border = '1px solid #a0a0cc';
+                break;
+            case 'GENE_OR_GENE_PRODUCT':
+                entity.style.backgroundColor = '#fff8e1';
+                entity.style.border = '1px solid #e6c849';
+                break;
+            case 'SIMPLE_CHEMICAL':
+                entity.style.backgroundColor = '#e0f7fa';
+                entity.style.border = '1px solid #b2ebf2';
+                break;
+            case 'CANCER':
+                entity.style.backgroundColor = '#ffebee';
+                entity.style.border = '1px solid #ffcdd2';
+                break;
+            case 'ORGANISM':
+                entity.style.backgroundColor = '#f0f8f0';
+                entity.style.border = '1px solid #c0d0c0';
+                break;
+            case 'CELLULAR_COMPONENT':
+                entity.style.backgroundColor = '#e8eaf6';
+                entity.style.border = '1px solid #c5cae9';
+                break;
+            case 'IMMATERIAL_ANATOMICAL_ENTITY':
+                entity.style.backgroundColor = '#f3e5f5';
+                entity.style.border = '1px solid #e1bee7';
+                break;
+            case 'ORGANISM_SUBSTANCE':
+                entity.style.backgroundColor = '#e0f2f1';
+                entity.style.border = '1px solid #b2dfdb';
+                break;
+            case 'AMINO_ACID':
+                entity.style.backgroundColor = '#fce4ec';
+                entity.style.border = '1px solid #f8bbd0';
+                break;
+            case 'ORGAN':
+                entity.style.backgroundColor = '#fbe9e7';
+                entity.style.border = '1px solid #ffccbc';
+                break;
+            case 'CELL':
+                entity.style.backgroundColor = '#f1f8e9';
+                entity.style.border = '1px solid #c5e1a5';
+                break;
+            default:
+                // Default light background and border for unknown entity types
+                entity.style.backgroundColor = '#f8f9fa';
+                entity.style.border = '1px solid #dee2e6';
+        }
+        
+        // Style the label
+        const label = entity.querySelector('.label');
+        if (label) {
+            label.style.color = '#ffffff';
+            label.style.textShadow = '0 0 2px rgba(0,0,0,0.7)';
+            
+            // Apply specific styling based on entity type
+            switch(entityType) {
+                case 'TRAIT':
+                    label.style.backgroundColor = '#4a6dd6';
+                    break;
+                case 'GENE_OR_GENE_PRODUCT':
+                    label.style.backgroundColor = '#e6c849';
+                    break;
+                case 'CANCER':
+                    label.style.backgroundColor = '#dc3545';
+                    break;
+                case 'SIMPLE_CHEMICAL':
+                    label.style.backgroundColor = '#008000';
+                    break;
+                case 'ORGANISM':
+                    label.style.backgroundColor = '#6ba36b';
+                    break;
+                case 'CELLULAR_COMPONENT':
+                    label.style.backgroundColor = '#5c6bc0';
+                    break;
+                case 'IMMATERIAL_ANATOMICAL_ENTITY':
+                    label.style.backgroundColor = '#9575cd';
+                    break;
+                case 'ORGANISM_SUBSTANCE':
+                    label.style.backgroundColor = '#26a69a';
+                    break;
+                case 'AMINO_ACID':
+                    label.style.backgroundColor = '#ec407a';
+                    break;
+                case 'ORGAN':
+                    label.style.backgroundColor = '#ff7043';
+                    break;
+                case 'CELL':
+                    label.style.backgroundColor = '#8bc34a';
+                    break;
+                default:
+                    label.style.backgroundColor = '#6c757d';
+            }
+        }
+    });
+}
+
+/**
+ * Reset entity styles for light theme
+ */
+function resetEntityStyles() {
+    document.querySelectorAll('.entity').forEach(entity => {
+        // Clear enhanced space theme styling
+        entity.style.boxShadow = '';
+        entity.style.display = '';
+        entity.style.color = '';
+        
+        // Reset background and border
+        entity.style.backgroundColor = '';
+        entity.style.border = '';
+        
+        // Reset label styles
+        const label = entity.querySelector('.label');
+        if (label) {
+            label.style.color = '';
+            label.style.textShadow = '';
+            label.style.backgroundColor = '';
+        }
+    });
+}
+
+/**
+ * Update displaCy theme
+ */
+function updateDisplaCyTheme() {
+    const svg = document.querySelector('#displacy-container svg');
+    if (svg) {
+        // Remove DisplaCy's inline background and apply theme color
+        svg.style.background = 'transparent';
+        svg.style.color = document.body.classList.contains('space-theme') 
+            ? '#4facfe'   // light blue for dark mode
+            : '#000000';  // black for light mode
+        
+        // Update tag colors
+        const tags = document.querySelectorAll('#displacy-container .displacy-tag');
+        if (tags.length > 0) {
+            const tagColor = document.body.classList.contains('space-theme') 
+                ? '#4facfe'   // light blue for dark mode
+                : '#333333';  // dark gray for light mode
+            
+            tags.forEach(tag => {
+                tag.setAttribute('fill', tagColor);
+                if (document.body.classList.contains('space-theme')) {
+                    tag.style.textShadow = '0 0 5px #4facfe';
+                } else {
+                    tag.style.textShadow = '';
+                }
+            });
+        }
     }
 }
 

@@ -32,6 +32,53 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPaper = null;
     let abstractSentences = [];
     
+    // Function to display paper details with author information
+    function displayPaperDetails(paperData) {
+        if (!paperData) return;
+        
+        // Add author information
+        let authorSection = '';
+        if (paperData.author_display) {
+            authorSection = `
+                <div class="author-info">
+                    <h4>Authors</h4>
+                    <p>${paperData.author_display}</p>
+                </div>
+            `;
+        }
+        
+        // Construct paper header with author information
+        const paperHeaderHtml = `
+            <div class="paper-metadata">
+                <h2 id="paper-title" class="paper-title">${paperData.title}</h2>
+                ${authorSection}
+                <div id="paper-journal" class="journal-info">${paperData.journal}</div>
+                <div id="paper-source" class="source-info">Source: ${paperData.source.toUpperCase()} (PMID: ${paperData.pmid})</div>
+            </div>
+            <div class="action-buttons">
+                <button id="btn-parse-title" class="btn-action">Parse Title</button>
+                <button id="btn-export-data" class="btn-action btn-export">Export Data</button>
+            </div>
+        `;
+        
+        // Update the DOM
+        document.querySelector('.paper-header').innerHTML = paperHeaderHtml;
+        
+        // Re-attach event listener to the Parse Title button since we replaced the DOM element
+        document.getElementById('btn-parse-title').addEventListener('click', async () => {
+            if (paperData.title) {
+                try {
+                    await parseSentence(paperData.title);
+                    // Switch to parsing tab
+                    document.querySelector('button[data-tab="tab-parsing"]').click();
+                } catch (error) {
+                    console.error('Error parsing title:', error);
+                    errorDiv.textContent = 'An error occurred while parsing the title.';
+                }
+            }
+        });
+    }
+    
     // Initialize tabs
     function initTabs() {
         // Navigation tabs
@@ -361,6 +408,106 @@ document.addEventListener('DOMContentLoaded', () => {
         return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
     }
     
+    // Parse a sentence and visualize the dependency structure
+    async function parseSentence(text) {
+        loadingDiv.style.display = 'flex';
+        errorDiv.textContent = '';
+
+        try {
+            const response = await fetch('/parse_sentence', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error ${response.status}`);
+            }
+
+            const parseData = await response.json();
+
+            // Check if the backend returned an error within the JSON payload
+            if (parseData.error) {
+                throw new Error(parseData.error); // Throw error to be caught below
+            }
+
+            // Existing visualizer — keep working
+            renderDependencyGraph(parseData);
+
+
+            //  NEW — render DisplaCy via backend
+            const displacyRes = await fetch('/displacy', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+
+            if (displacyRes.ok) {
+                const displacyData = await displacyRes.json();
+                const displacyContainer = document.getElementById("displacy-container");
+                if (displacyContainer) {
+                    displacyContainer.innerHTML = displacyData.html;
+                    //updateDisplaCyTheme();         
+                    colorCodeDisplacyTags();
+                }
+            } else {
+                console.warn('DisplaCy rendering failed');
+            }
+
+        } catch (error) {
+            console.error('Error in sentence parsing:', error);
+            errorDiv.textContent = 'Failed to parse sentence: ' + error.message;
+            const container = document.getElementById('displacy-container');
+            if (container) {
+                container.innerHTML = '<p class="error-text">Could not generate dependency parse.</p>';
+            }
+        } finally {
+            loadingDiv.style.display = 'none';
+        }
+    }
+
+    function updateDisplaCyTheme() {
+        const svg = document.querySelector('#displacy-container svg');
+        if (svg) {
+            // Remove DisplaCy's inline background and apply theme color
+            svg.style.background = 'transparent';
+            svg.style.color = document.body.classList.contains('space-theme') 
+                ? '#4facfe'   // light blue for dark mode
+                : '#000000';  // black for light mode
+        }
+    }
+
+    function colorCodeDisplacyTags() {
+        const isSpaceTheme = document.body.classList.contains('space-theme');
+
+        if (isSpaceTheme) {
+            // In space theme, use a consistent color (CSS will handle it)
+            document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
+                tag.setAttribute('fill', '#4facfe');  // light blue or neon
+            });
+        } else {
+            // Light theme: color-code by POS tag
+            document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
+                const text = tag.textContent.trim();
+                if (text === 'NOUN') tag.setAttribute('fill', '#a29bfe');
+                else if (text === 'VERB') tag.setAttribute('fill', '#7DCFB6');
+                else if (text === 'ADJ') tag.setAttribute('fill', '#8C2155');
+                else if (text === 'ADV') tag.setAttribute('fill', '#81ecec');
+                else if (text === 'DET') tag.setAttribute('fill', '#F79256');
+                else if (text === 'PRON') tag.setAttribute('fill', '#fd79a8');
+                else if (text === 'CCONJ') tag.setAttribute('fill', '#74b9ff');
+                else if (text === 'ADP') tag.setAttribute('fill', '#2E5077');
+                else if (text === 'SCONJ') tag.setAttribute('fill', '#226F54');
+                else if (text === 'NUM') tag.setAttribute('fill', '#CC3F0C');
+                else tag.setAttribute('fill', '#333333'); // default for others
+            });
+        }
+    }
+    
     // Handle PMID form submission
     pmidForm.addEventListener('submit', async (event) => {
         event.preventDefault(); // Prevent default page reload
@@ -412,17 +559,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     pmid: pmid,
                     ...data
                 };  
+
+                // Display paper details using the new function
+                displayPaperDetails(window.currentPaper);
                 
-                // Success! Display the results
-                titleDiv.textContent = data.title || 'N/A';
-                journalDiv.textContent = data.journal || 'N/A';
-                
-                // Show source of the paper (local or PubMed)
-                const sourceText = data.source === 'local' 
-                    ? 'Source: Local Database' 
-                    : 'Source: PubMed API';
-                sourceDiv.textContent = sourceText;
-                
+                // Rest of your existing code to display abstract, etc.
                 abstractDiv.textContent = data.abstract || 'N/A';
                 vizTitleDiv.innerHTML = data.viz_title_html || '';
                 vizAbstractDiv.innerHTML = data.viz_abstract_html || '';
@@ -441,7 +582,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Switch to analysis tab
                 document.querySelector('a[data-tab="analysis-section"]').click();
             }
-
         } catch (error) {
             // Handle network errors or other unexpected issues
             console.error('Fetch Error:', error);
@@ -449,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingDiv.style.display = 'none';
         }
     });
+    
     // Handle search form submission
     if (searchForm) {
         searchForm.addEventListener('submit', async (event) => {
@@ -601,158 +742,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Parse a sentence and visualize the dependency structure
-    /*async function parseSentence(text) {
-        loadingDiv.style.display = 'flex';
-        errorDiv.textContent = '';
-        
-        try {
-            const response = await fetch('/parse_sentence', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ text })
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error ${response.status}`);
-            }
-            
-            const parseData = await response.json();
-
-            // Check if the backend returned an error within the JSON payload
-            if (parseData.error) {
-                throw new Error(parseData.error); // Throw error to be caught below
-            }
-
-            // Render the visualization using dependency.js
-            renderDependencyGraph(parseData); // Only call if no error
-
-        } catch (error) {
-            console.error('Error in sentence parsing:', error);
-            errorDiv.textContent = 'Failed to parse sentence: ' + error.message;
-            // Clear the visualization area on error
-            const container = document.getElementById('dependency-visualization');
-            if (container) {
-                container.innerHTML = '<p class="error-text">Could not generate dependency parse.</p>';
-            }
-        } finally {
-            loadingDiv.style.display = 'none';
-        }
-    }*/
-     // Parse a sentence and visualize the dependency structure
-async function parseSentence(text) {
-    loadingDiv.style.display = 'flex';
-    errorDiv.textContent = '';
-
-    try {
-        const response = await fetch('/parse_sentence', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text })
-        });
-
-        if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-        }
-
-        const parseData = await response.json();
-
-        // Check if the backend returned an error within the JSON payload
-        if (parseData.error) {
-            throw new Error(parseData.error); // Throw error to be caught below
-        }
-
-        // Existing visualizer — keep working
-        renderDependencyGraph(parseData);
-
-
-        //  NEW — render DisplaCy via backend
-        const displacyRes = await fetch('/displacy', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text })
-        });
-
-        if (displacyRes.ok) {
-            const displacyData = await displacyRes.json();
-            const displacyContainer = document.getElementById("displacy-container");
-            if (displacyContainer) {
-                displacyContainer.innerHTML = displacyData.html;
-                //updateDisplaCyTheme();         
-                colorCodeDisplacyTags();
-            }
-        } else {
-            console.warn('DisplaCy rendering failed');
-        }
-
-    } catch (error) {
-        console.error('Error in sentence parsing:', error);
-        errorDiv.textContent = 'Failed to parse sentence: ' + error.message;
-        const container = document.getElementById('displacy-container');
-        if (container) {
-            container.innerHTML = '<p class="error-text">Could not generate dependency parse.</p>';
-        }
-    } finally {
-        loadingDiv.style.display = 'none';
-    }
-}
-
-
-
-function updateDisplaCyTheme() {
-    const svg = document.querySelector('#displacy-container svg');
-    if (svg) {
-        // Remove DisplaCy's inline background and apply theme color
-        svg.style.background = 'transparent';
-        svg.style.color = document.body.classList.contains('space-theme') 
-            ? '#4facfe'   // light blue for dark mode
-            : '#000000';  // black for light mode
-    }
-}
-
-
-const themeToggle = document.getElementById('theme-toggle');
-if (themeToggle) {
-themeToggle.addEventListener('click', () => {
-    document.body.classList.toggle('space-theme');
-    updateDisplaCyTheme(); // Apply theme-dependent colors
-});
-}
-
-
-function colorCodeDisplacyTags() {
-    const isSpaceTheme = document.body.classList.contains('space-theme');
-
-    if (isSpaceTheme) {
-        // In space theme, use a consistent color (CSS will handle it)
-        document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
-            tag.setAttribute('fill', '#4facfe');  // light blue or neon
-        });
-    } else {
-        // Light theme: color-code by POS tag
-        document.querySelectorAll('#displacy-container .displacy-tag').forEach(tag => {
-            const text = tag.textContent.trim();
-            if (text === 'NOUN') tag.setAttribute('fill', '#a29bfe');
-            else if (text === 'VERB') tag.setAttribute('fill', '#7DCFB6');
-            else if (text === 'ADJ') tag.setAttribute('fill', '#8C2155');
-            else if (text === 'ADV') tag.setAttribute('fill', '#81ecec');
-            else if (text === 'DET') tag.setAttribute('fill', '#F79256');
-            else if (text === 'PRON') tag.setAttribute('fill', '#fd79a8');
-            else if (text === 'CCONJ') tag.setAttribute('fill', '#74b9ff');
-            else if (text === 'ADP') tag.setAttribute('fill', '#2E5077');
-            else if (text === 'SCONJ') tag.setAttribute('fill', '#226F54');
-            else if (text === 'NUM') tag.setAttribute('fill', '#CC3F0C');
-            else tag.setAttribute('fill', '#333333'); // default for others
-        });
-    }
-}
-    
     // Handle zoom controls for dependency parsing
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
         displacyZoom *= 1.2;
@@ -770,7 +759,6 @@ function colorCodeDisplacyTags() {
         updateDisplacyZoom();
     });
     
-
     function updateDisplacyZoom() {
         const svg = document.querySelector('#displacy-container svg');
         if (svg) {
@@ -781,7 +769,14 @@ function colorCodeDisplacyTags() {
         }
     }
     
-    
+    // Handle theme toggle if it exists
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('space-theme');
+            updateDisplaCyTheme(); // Apply theme-dependent colors
+        });
+    }
     
     // Build legend from colors
     const legendDiv = document.getElementById('legend');

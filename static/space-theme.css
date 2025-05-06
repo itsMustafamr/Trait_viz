@@ -188,9 +188,34 @@ body.space-theme .visualization {
 }
 
 /* Entity styling */
+body.space-theme .entity {
+    display: inline-block;
+    padding: 0.25em 0.4em;
+    margin: 0 0.25em;
+    line-height: 1;
+    border-radius: 0.35em;
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+    transition: all 0.2s;
+}
+
 body.space-theme .entity:hover {
-    box-shadow: 0 0 5px #4facfe;
+    box-shadow: 0 0 8px #4facfe;
     transform: translateY(-1px);
+    z-index: 10;
+}
+
+/* Labels for entities */
+body.space-theme .entity .label {
+    font-size: 0.75em;
+    font-weight: bold;
+    line-height: 1;
+    border-radius: 0.35em;
+    vertical-align: middle;
+    margin-left: 0.5rem;
+    padding: 0.15em 0.4em;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    color: white;
+    text-shadow: 0 0 2px rgba(0,0,0,0.7);
 }
 
 /* Tab buttons */
@@ -365,7 +390,7 @@ body.space-theme .star {
     100% { opacity: 0.3; }
 }
 
-/* Space particles effect */
+/* Space particles effect (continued) */
 .space-particle {
     position: absolute;
     width: 1px;
@@ -538,4 +563,196 @@ body.space-theme .developer-card:nth-child(2) {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* Entity-specific styling for space theme */
+/* These rules ensure proper display in dark mode */
+
+/* TRAIT entities */
+body.space-theme .entity[data-entity-label="TRAIT"] {
+    background-color: var(--color-trait, #e0e0ff) !important;
+    border: 1px solid #a0a0cc !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="TRAIT"] .label {
+    background-color: #4a6dd6 !important;
+    border-color: #3658bb !important;
+    color: white !important;
+}
+
+/* GENE_OR_GENE_PRODUCT entities */
+body.space-theme .entity[data-entity-label="GENE_OR_GENE_PRODUCT"] {
+    background-color: var(--color-gene_or_gene_product, #fff8e1) !important;
+    border: 1px solid #e6c849 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="GENE_OR_GENE_PRODUCT"] .label {
+    background-color: #e6c849 !important;
+    border-color: #d6b83a !important;
+    color: white !important;
+}
+
+/* SIMPLE_CHEMICAL entities */
+body.space-theme .entity[data-entity-label="SIMPLE_CHEMICAL"] {
+    background-color: var(--color-simple_chemical, #e0f7fa) !important;
+    border: 1px solid #b2ebf2 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="SIMPLE_CHEMICAL"] .label {
+    background-color: #008000 !important;
+    border-color: #006400 !important;
+    color: white !important;
+}
+
+/* CANCER entities */
+body.space-theme .entity[data-entity-label="CANCER"] {
+    background-color: var(--color-cancer, #ffebee) !important;
+    border: 1px solid #ffcdd2 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="CANCER"] .label {
+    background-color: #dc3545 !important;
+    border-color: #bd2130 !important;
+    color: white !important;
+}
+
+/* CELL entities */
+body.space-theme .entity[data-entity-label="CELL"] {
+    background-color: var(--color-cell, #f1f8e9) !important;
+    border: 1px solid #c5e1a5 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="CELL"] .label {
+    background-color: #8bc34a !important;
+    border-color: #7cb342 !important;
+    color: white !important;
+}
+
+/* ORGANISM entities */
+body.space-theme .entity[data-entity-label="ORGANISM"] {
+    background-color: #f0f8f0 !important;
+    border: 1px solid #c0d0c0 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="ORGANISM"] .label {
+    background-color: #6ba36b !important;
+    border-color: #5b8a5b !important;
+    color: white !important;
+}
+
+/* CELLULAR_COMPONENT entities */
+body.space-theme .entity[data-entity-label="CELLULAR_COMPONENT"] {
+    background-color: #e8eaf6 !important;
+    border: 1px solid #c5cae9 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="CELLULAR_COMPONENT"] .label {
+    background-color: #5c6bc0 !important;
+    border-color: #4455aa !important;
+    color: white !important;
+}
+
+/* IMMATERIAL_ANATOMICAL_ENTITY entities */
+body.space-theme .entity[data-entity-label="IMMATERIAL_ANATOMICAL_ENTITY"] {
+    background-color: #f3e5f5 !important;
+    border: 1px solid #e1bee7 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="IMMATERIAL_ANATOMICAL_ENTITY"] .label {
+    background-color: #9575cd !important;
+    border-color: #8466b8 !important;
+    color: white !important;
+}
+
+/* ORGANISM_SUBSTANCE entities */
+body.space-theme .entity[data-entity-label="ORGANISM_SUBSTANCE"] {
+    background-color: #e0f2f1 !important;
+    border: 1px solid #b2dfdb !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="ORGANISM_SUBSTANCE"] .label {
+    background-color: #26a69a !important;
+    border-color: #1e8a80 !important;
+    color: white !important;
+}
+
+/* AMINO_ACID entities */
+body.space-theme .entity[data-entity-label="AMINO_ACID"] {
+    background-color: #fce4ec !important;
+    border: 1px solid #f8bbd0 !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="AMINO_ACID"] .label {
+    background-color: #ec407a !important;
+    border-color: #d63665 !important;
+    color: white !important;
+}
+
+/* ORGAN entities */
+body.space-theme .entity[data-entity-label="ORGAN"] {
+    background-color: #fbe9e7 !important;
+    border: 1px solid #ffccbc !important;
+    color: #000 !important;
+}
+
+body.space-theme .entity[data-entity-label="ORGAN"] .label {
+    background-color: #ff7043 !important;
+    border-color: #f4511e !important;
+    color: white !important;
+}
+
+/* Ensure all entity labels have good contrast in space theme */
+body.space-theme .entity .label {
+    color: white !important;
+    text-shadow: 0 0 2px rgba(0, 0, 0, 0.7) !important;
+}
+
+/* Add a subtle glow to all entity boxes for better visibility */
+body.space-theme .entity {
+    box-shadow: 0 0 5px rgba(79, 172, 254, 0.3) !important;
+}
+
+/* Fix for displaCy visualization in space theme */
+body.space-theme #displacy-container svg {
+    background: transparent !important;
+    color: #4facfe !important;
+}
+
+body.space-theme #displacy-container .displacy-tag {
+    font-weight: 800 !important;
+    font-size: 1.1em !important;
+    font-family: 'Orbitron', 'Consolas', 'Courier New', monospace !important;
+    letter-spacing: 0.5px;
+    fill: #4facfe !important;
+    text-shadow: 0 0 5px #4facfe, 0 0 10px #4facfe;
+}
+/* Author info styling for space theme */
+body.space-theme .author-info {
+    margin: 10px 0;
+    padding: 5px 10px;
+    background-color: rgba(10, 10, 42, 0.5);
+    border-radius: 5px;
+    border-left: 3px solid #4facfe;
+}
+
+body.space-theme .author-info h4 {
+    color: #4facfe;
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+body.space-theme .author-info p {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-size: 0.85rem;
 }
