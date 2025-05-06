@@ -409,12 +409,13 @@ def search():
 
 # --- Main Execution ---
 if __name__ == '__main__':
-    host = CONFIG.get('server', {}).get('host', '0.0.0.0')
-    port = CONFIG.get('server', {}).get('port', 5000)
-    debug = CONFIG.get('server', {}).get('debug', True)
+    import os, atexit
+    port  = int(os.getenv("PORT", 5000))         # 👈 new
+    host  = os.getenv("HOST", "0.0.0.0")         # optional
+    debug = CONFIG.get("server", {}).get("debug", False)
 
     print(f"Starting server on http://{host}:{port} (debug={debug})")
     # Make sure cache is saved on exit if modified
-    import atexit
     atexit.register(save_cache)
     app.run(host=host, port=port, debug=debug)
+    
