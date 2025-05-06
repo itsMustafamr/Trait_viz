@@ -43,6 +43,22 @@ def load_data():
 # Load data when the application starts
 load_data()
 
+
+from nlp_utils import render_displacy
+
+@app.route('/displacy', methods=['POST'])
+def displacy_endpoint():
+    data = request.json
+    sentence = data.get("text", "").strip()
+    if not sentence:
+        return jsonify({"error": "Text required"}), 400
+    try:
+        html = render_displacy(sentence)
+        return jsonify({"html": html})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ---------- dictionary matcher ----------
 def dict_matches(text: str) -> List[Dict]:
     matches = []

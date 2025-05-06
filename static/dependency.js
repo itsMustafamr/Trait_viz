@@ -11,7 +11,7 @@ window.dependencyVisualization = null;
  * @param {Object} parseData - The dependency parse data from spaCy
  */
 function renderDependencyGraph(parseData) {
-    const container = document.getElementById('dependency-visualization');
+    const container = document.getElementById('displacy-container');
     container.innerHTML = '';  // Clear previous visualization
     
     if (!parseData || !parseData.tokens || parseData.tokens.length === 0) {
@@ -53,11 +53,22 @@ class DependencyVisualization {
     }
     
     render() {
+        
         // Create SVG element
-        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+       /* this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         this.svg.setAttribute('width', this.settings.width);
         this.svg.setAttribute('height', this.settings.height);
+        this.svg.setAttribute('class', 'dependency-svg');?*/
+
+        this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); 
         this.svg.setAttribute('class', 'dependency-svg');
+        // Use viewBox for responsive scaling
+          this.svg.setAttribute('viewBox', `0 0 ${this.settings.width} ${this.settings.height}`);
+          this.svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+          // Let CSS handle the actual size (100% of parent)
+           this.svg.style.width = "100%";
+           this.svg.style.height = "100%";
+
         
         // Add root group for transformations
         this.rootGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -166,12 +177,14 @@ class DependencyVisualization {
                 endPos.y - 5,   // Adjusted ending point
                 arcHeight, 
                 arc.label,
-                arc.dir
+                arc.dir,
+                arc.start,
+                arc.end 
             );
         });
     }
     
-    drawArc(x1, y1, x2, y2, height, label, direction) {
+    /* drawArc(x1, y1, x2, y2, height, label, direction) {
         const arcGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         arcGroup.setAttribute('class', 'dependency-arc');
         
@@ -200,13 +213,49 @@ class DependencyVisualization {
         labelText.setAttribute('text-anchor', 'middle');
         labelText.setAttribute('font-size', '12');
         labelText.setAttribute('font-weight', 'bold'); // Make label bolder
-        labelText.setAttribute('class', 'arc-label');
-        labelText.textContent = label;
-        arcGroup.appendChild(labelText);
+    }*/
+        drawArc(x1, y1, x2, y2, height, label, direction) {
+
+            const arcGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            arcGroup.setAttribute('class', 'dependency-arc');
+                
         
-        this.rootGroup.appendChild(arcGroup);
-    }
+            // Calculate control point for the curve
+            const midX = (x1 + x2) / 2;
+            const controlY = y1 - height;
+        
+            // Draw the arc path
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', `M${x1},${y1} Q${midX},${controlY} ${x2},${y2}`);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#666');  // default gray
+            path.setAttribute('stroke-width', '1.5');
+            arcGroup.appendChild(path);
+        
+            // Add the arrow at appropriate end
+            const arrowX = direction === 'left' ? x1 : x2;
+            const arrowY = y1;
+            const arrowPath = this.createArrow(arrowX, arrowY, direction);
+            arcGroup.appendChild(arrowPath);
+        
+            // Add label at the top of the arc
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('x', midX);
+            labelText.setAttribute('y', controlY - 8);
+            labelText.setAttribute('text-anchor', 'middle');
+            labelText.setAttribute('font-size', '12');
+            labelText.setAttribute('font-weight', 'bold');
+            labelText.setAttribute('class', 'arc-label');
+            labelText.textContent = label;
+            arcGroup.appendChild(labelText);
+        
+            this.rootGroup.appendChild(arcGroup);
+        }
+        
     
+
+
+
     createArrow(x, y, direction) {
         const arrowSize = 6; // Slightly larger arrow
         let points;
